@@ -8,6 +8,7 @@ Den skal ha ei status linje, som skal varsle om feil blir oppdaga. Denne skal ve
 Den skal ha knappar for å skifte vindu.
 """
 import tkinter as tk
+from tkinter import ttk
 import cv2
 
 LARGE_FONT = ("Verdana", 12)
@@ -16,20 +17,23 @@ LARGE_FONT = ("Verdana", 12)
 class MainApplication(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
+
+        tk.Tk.iconbitmap(self, default="clienticon.ico")
+        tk.Tk.wm_title(self, "3D print error detection")
+
         container = tk.Frame(self)
-
         container.pack(side="top", fill="both", expand=True)
-
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
 
-        frame = StartPage(container, self)
+        for F in (StartPage, PageOne, PageTwo):
+            frame = F(container, self)
 
-        self.frames[StartPage] = frame
+            self.frames[F] = frame
 
-        frame.grid(row=0, column=0, sticky="nsew")
+            frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame(StartPage)
 
@@ -37,13 +41,17 @@ class MainApplication(tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()
 
-        # self.parent = parent
-        # self.vid = cv2.VideoCapture(0)
-        # if not self.vid.isOpened():
-        #     raise ValueError("Unable to open video source")
-        # # Get video source width and height
-        # self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-        # self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+def qf(param):
+    print(param)
+
+    # self.parent = parent
+    # self.vid = cv2.VideoCapture(0)
+    # if not self.vid.isOpened():
+    #     raise ValueError("Unable to open video source")
+    # # Get video source width and height
+    # self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+    # self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     # def __del__(self):
     #     if self.vid.isOpened():
@@ -57,7 +65,45 @@ class StartPage(tk.Frame):
         label = tk.Label(self, text="Start Page", font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = tk.Button
+        button1 = ttk.Button(self, text="Visit page 1",
+                            command=lambda: controller.show_frame(PageOne))
+        button1.pack()
+
+        button2 = ttk.Button(self, text="Page Two",
+                            command=lambda: controller.show_frame(PageTwo))
+        button2.pack()
+
+
+class PageOne(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Page One", font=LARGE_FONT)
+        label.pack(pady=10, padx=10)
+
+        button1 = ttk.Button(self, text="Back to home",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+
+        button2 = ttk.Button(self, text="Page Two",
+                            command=lambda: controller.show_frame(PageTwo))
+        button2.pack()
+
+
+class PageTwo(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Page Two", font=LARGE_FONT)
+        label.pack(pady=10, padx=10)
+
+        button1 = ttk.Button(self, text="Back to home",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+
+        button2 = ttk.Button(self, text="Page One",
+                            command=lambda: controller.show_frame(PageOne))
+        button2.pack()
 
 
 def run():
