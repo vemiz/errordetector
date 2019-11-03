@@ -7,11 +7,42 @@ Den skal ha eit vindu for å loope timelapsen.
 Den skal ha ei status linje, som skal varsle om feil blir oppdaga. Denne skal vere synlig i alle vindu.
 Den skal ha knappar for å skifte vindu.
 """
+import threading
 import tkinter as tk
 from tkinter import ttk
+from tkinter import *
 import cv2
+import imutils as imutils
+
+from camera import Camera
+from PIL import ImageTk, Image
 
 LARGE_FONT = ("Verdana", 12)
+NORMAL_FONT = ("Verdana", 10)
+SMALL_FONT = ("Verdana", 8)
+
+
+def getbuttons(page, controller):
+    if page == StartPage:
+        button1 = ttk.Button(page, text="Preview",
+                             command=lambda: controller.show_frame(Preview))
+        button1.pack()
+        button2 = ttk.Button(page, text="Timelapse",
+                             command=lambda: controller.show_frame(Timelapse))
+        button2.pack()
+        button3 = ttk.Button(page, text="Config",
+                             command=lambda: controller.show_frame(Config))
+        button3.pack()
+
+
+def popupmsg(msg):
+    popup = tk.Tk()
+    popup.wm_title("!")
+    label = ttk.Label(popup, text=msg, font=NORMAL_FONT)
+    label.pack(side="top", fill="x", pady=10)
+    B1 = ttk.Button(popup, text="Okay", command=popup.destroy())
+    B1.pack()
+    popup.mainloop()
 
 
 class MainApplication(tk.Tk):
@@ -20,42 +51,56 @@ class MainApplication(tk.Tk):
 
         tk.Tk.iconbitmap(self, default="clienticon.ico")
         tk.Tk.wm_title(self, "3D print error detection")
+        tk.Tk.geometry(self, "1280x720")
 
-        container = tk.Frame(self)
-        container.pack(side="top", fill="both", expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        menubar = tk.Menu(self)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Save settings", command=lambda: popupmsg("Not supported yet!"))
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=quit)
+        menubar.add_cascade(label="File", menu=filemenu)
+        tk.Tk.config(self, menu=menubar)
 
-        self.frames = {}
+        notebook = ttk.Notebook(self)
+        notebook.pack(fill="both", expand=True)
+        rows = 0
+        while rows < 1:
+            self.rowconfigure(rows, weight=1)
+            self.columnconfigure(rows, weight=1)
+            rows += 1
+        self.DISPPLAYLABEL_WIDTH = 7
+        self.WHITE = "White"
+        self.GRAY = '#424242'
 
-        for F in (StartPage, PageOne, PageTwo):
-            frame = F(container, self)
+        startpage = ttk.Frame(notebook)
+        previewpage = ttk.Frame(notebook)
+        timelapsepage = ttk.Frame(notebook)
+        configpage = ttk.Frame(notebook)
+        notebook.add(startpage, text='Start Page')
+        notebook.add(previewpage, text='Preview')
+        notebook.add(timelapsepage, text='Timelapse')
+        notebook.add(configpage, text='Config')
 
-            self.frames[F] = frame
+        previewtab = PanedWindow(previewpage)
+        previewtab.configure(bg=self.GRAY)
+        previewtab.pack(fill="both", expand=True)
 
-            frame.grid(row=0, column=0, sticky="nsew")
+        leftpreviewtabmain = PanedWindow(previewtab, orient=VERTICAL, bg=self.GRAY)
+        leftpreviewtabmain.configure(bg=self.GRAY, relief='groove', borderwidth='2')
+        previewtab.add(leftpreviewtabmain)
+        buttonpanel = PanedWindow(leftpreviewtabmain)
+        optionlabel = Label(buttonpanel, text="Options", bg=self.GRAY, fg=self.WHITE,
+                            font=("Arial", "11"))
 
-        self.show_frame(StartPage)
+        optionbutton = Button(buttonpanel, text='Option', bg=self.GRAY, fg='Orange',
+                              height=2, width=20, font=('Arial', '11'), state='disable')
+        optionlabel.pack(padx=5, pady=5)
+        optionbutton.pack(padx=10, pady=10)
+
 
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
-
-
-def qf(param):
-    print(param)
-
-    # self.parent = parent
-    # self.vid = cv2.VideoCapture(0)
-    # if not self.vid.isOpened():
-    #     raise ValueError("Unable to open video source")
-    # # Get video source width and height
-    # self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-    # self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    # def __del__(self):
-    #     if self.vid.isOpened():
-    #         self.vid.release()
 
 
 class StartPage(tk.Frame):
@@ -65,49 +110,69 @@ class StartPage(tk.Frame):
         label = tk.Label(self, text="Start Page", font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text="Visit page 1",
-                            command=lambda: controller.show_frame(PageOne))
-        button1.pack()
-
-        button2 = ttk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
+        getbuttons(self, controller)
 
 
-class PageOne(tk.Frame):
+class Preview(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page One", font=LARGE_FONT)
+        label = tk.Label(self, text="Preview", font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text="Back to home",
-                            command=lambda: controller.show_frame(StartPage))
+        button1 = ttk.Button(self, text="StartPage",
+                             command=lambda: controller.show_frame(StartPage))
         button1.pack()
 
-        button2 = ttk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(PageTwo))
+        button2 = ttk.Button(self, text="Timelapse",
+                             command=lambda: controller.show_frame(Timelapse))
         button2.pack()
 
+        button3 = ttk.Button(self, text="Config",
+                             command=lambda: controller.show_frame(Config))
+        button3.pack()
 
-class PageTwo(tk.Frame):
+
+class Timelapse(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page Two", font=LARGE_FONT)
+        label = tk.Label(self, text="Timelapse", font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text="Back to home",
-                            command=lambda: controller.show_frame(StartPage))
+        button1 = ttk.Button(self, text="StartPage",
+                             command=lambda: controller.show_frame(StartPage))
         button1.pack()
 
-        button2 = ttk.Button(self, text="Page One",
-                            command=lambda: controller.show_frame(PageOne))
+        button2 = ttk.Button(self, text="Preview",
+                             command=lambda: controller.show_frame(Preview))
         button2.pack()
+
+        button3 = ttk.Button(self, text="Config",
+                             command=lambda: controller.show_frame(Config))
+        button3.pack()
+
+
+class Config(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Config", font=LARGE_FONT)
+        label.pack(pady=10, padx=10)
+
+        button1 = ttk.Button(self, text="StartPage",
+                             command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+
+        button2 = ttk.Button(self, text="Preview",
+                             command=lambda: controller.show_frame(Preview))
+        button2.pack()
+
+        button3 = ttk.Button(self, text="Timelapse",
+                             command=lambda: controller.show_frame(Timelapse))
+        button3.pack()
 
 
 def run():
-    # root = tk.Tk()
-    # root.title("GUI")
     app = MainApplication()
     app.mainloop()
