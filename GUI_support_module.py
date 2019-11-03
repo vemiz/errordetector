@@ -50,6 +50,9 @@ def destroy_window():
     top_level.destroy()
     top_level = None
 
+def displayCameraFrame():
+    first_GUI.Toplevel1.Camera_frame
+
 if __name__ == '__main__':
     import first_GUI
     first_GUI.vp_start_gui()

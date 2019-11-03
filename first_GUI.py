@@ -6,66 +6,71 @@
 #    Nov 02, 2019 12:58:45 PM CET  platform: Windows NT
 
 import sys
-
-try:
-    import Tkinter as tk
-except ImportError:
-    import tkinter as tk
-
-try:
-    import ttk
-    py3 = False
-except ImportError:
-    import tkinter.ttk as ttk
-    py3 = True
-
+import tkinter as tk
+from tkinter import *
+from tkinter import Menu
+from tkinter import ttk
+import threading
 import GUI_support_module
 from facade import Facade
+
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root
     root = tk.Tk()
     GUI_support_module.set_Tk_var()
-    top = Toplevel1 (root)
+    top = Toplevel1(root)
     GUI_support_module.init(root, top)
     root.mainloop()
 
+
 w = None
+
+
 def create_Toplevel1(root, *args, **kwargs):
     '''Starting point when module is imported by another program.'''
     global w, w_win, rt
     rt = root
-    w = tk.Toplevel (root)
+    w = tk.Toplevel(root)
     GUI_support_module.set_Tk_var()
-    top = Toplevel1 (w)
+    top = Toplevel1(w)
     GUI_support_module.init(w, top, *args, **kwargs)
     return (w, top)
+
 
 def destroy_Toplevel1():
     global w
     w.destroy()
     w = None
 
-class Toplevel1:
+
+class Toplevel1(threading.Thread):
+    # Put functionality here
+    #def displayCameraFrame(self, frame):
+        #frame = cameraFrame
+
     def __init__(self, top=None):
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
+
+        threading.Thread.__init__(self)
+
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
-        _compcolor = '#d9d9d9' # X11 color: 'gray85'
-        _ana1color = '#d9d9d9' # X11 color: 'gray85'
-        _ana2color = '#ececec' # Closest X11 color: 'gray92'
+        _compcolor = '#d9d9d9'  # X11 color: 'gray85'
+        _ana1color = '#d9d9d9'  # X11 color: 'gray85'
+        _ana2color = '#ececec'  # Closest X11 color: 'gray92'
         self.style = ttk.Style()
         if sys.platform == "win32":
             self.style.theme_use('winnative')
-        self.style.configure('.',background=_bgcolor)
-        self.style.configure('.',foreground=_fgcolor)
-        self.style.configure('.',font="TkDefaultFont")
-        self.style.map('.',background=
-            [('selected', _compcolor), ('active',_ana2color)])
+        self.style.configure('.', background=_bgcolor)
+        self.style.configure('.', foreground=_fgcolor)
+        self.style.configure('.', font="TkDefaultFont")
+        self.style.map('.', background=
+        [('selected', _compcolor), ('active', _ana2color)])
 
-        top.geometry("1280x605+1822+485")
+        top.geometry("1280x605+200+100")
         top.minsize(176, 1)
         top.maxsize(2164, 1380)
         top.resizable(1, 1)
@@ -77,32 +82,32 @@ class Toplevel1:
         self.style.configure('TNotebook.Tab', background=_bgcolor)
         self.style.configure('TNotebook.Tab', foreground=_fgcolor)
         self.style.map('TNotebook.Tab', background=
-            [('selected', _compcolor), ('active',_ana2color)])
+        [('selected', _compcolor), ('active', _ana2color)])
         self.TNotebook1 = ttk.Notebook(top)
         self.TNotebook1.place(relx=0.0, rely=0.0, relheight=1.19, relwidth=1.0)
         self.TNotebook1.configure(takefocus="")
         self.TNotebook1_t0 = tk.Frame(self.TNotebook1)
         self.TNotebook1.add(self.TNotebook1_t0, padding=3)
-        self.TNotebook1.tab(0, text="Home",compound="left",underline="-1",)
+        self.TNotebook1.tab(0, text="Home", compound="left", underline="-1", )
         self.TNotebook1_t0.configure(background="#d9d9d9")
         self.TNotebook1_t0.configure(highlightbackground="#d9d9d9")
         self.TNotebook1_t0.configure(highlightcolor="black")
         self.TNotebook1_t1 = tk.Frame(self.TNotebook1)
         self.TNotebook1.add(self.TNotebook1_t1, padding=3)
-        self.TNotebook1.tab(1, text="Camera",compound="left",underline="-1",)
+        self.TNotebook1.tab(1, text="Camera", compound="left", underline="-1", )
         self.TNotebook1_t1.configure(background="#d9d9d9")
         self.TNotebook1_t1.configure(highlightbackground="#d9d9d9")
         self.TNotebook1_t1.configure(highlightcolor="black")
         self.TNotebook1_t2 = tk.Frame(self.TNotebook1)
         self.TNotebook1.add(self.TNotebook1_t2, padding=3)
         self.TNotebook1.tab(2, text="Timelapse", compound="none", underline="-1"
-                ,)
+                            , )
         self.TNotebook1_t2.configure(background="#d9d9d9")
         self.TNotebook1_t2.configure(highlightbackground="#d9d9d9")
         self.TNotebook1_t2.configure(highlightcolor="black")
         self.TNotebook1_t3 = tk.Frame(self.TNotebook1)
         self.TNotebook1.add(self.TNotebook1_t3, padding=3)
-        self.TNotebook1.tab(3, text="Config",compound="none",underline="-1",)
+        self.TNotebook1.tab(3, text="Config", compound="none", underline="-1", )
         self.TNotebook1_t3.configure(background="#d9d9d9")
         self.TNotebook1_t3.configure(highlightbackground="#d9d9d9")
         self.TNotebook1_t3.configure(highlightcolor="black")
@@ -114,17 +119,16 @@ class Toplevel1:
         self.Camera_frame.configure(relief="groove")
         self.Camera_frame.configure(background="#d9d9d9")
 
-
         self.Hue_min = ttk.Scale(self.TNotebook1_t3, from_=0, to=1.0)
         self.Hue_min.place(relx=0.172, rely=250.0, relwidth=0.203, relheight=0.0
-                , height=26, bordermode='ignore')
+                           , height=26, bordermode='ignore')
         self.Hue_min.configure(variable=GUI_support_module.huemin)
         self.Hue_min.configure(length="259")
         self.Hue_min.configure(takefocus="")
 
         self.Hue_max = ttk.Scale(self.TNotebook1_t3, from_=0, to=1.0)
         self.Hue_max.place(relx=0.172, rely=220.0, relwidth=0.204, relheight=0.0
-                , height=26, bordermode='ignore')
+                           , height=26, bordermode='ignore')
         self.Hue_max.configure(variable=GUI_support_module.huemax)
         self.Hue_max.configure(value="179")
         self.Hue_max.configure(length="179")
@@ -167,7 +171,7 @@ class Toplevel1:
 
         self.saturationlabelmax = ttk.Label(self.TNotebook1_t3)
         self.saturationlabelmax.place(relx=0.392, rely=220.0, height=24
-                , width=32)
+                                      , width=32)
         self.saturationlabelmax.configure(background="#d9d9d9")
         self.saturationlabelmax.configure(foreground="#000000")
         self.saturationlabelmax.configure(font="TkDefaultFont")
@@ -176,7 +180,7 @@ class Toplevel1:
 
         self.saturationlabelmin = ttk.Label(self.TNotebook1_t3)
         self.saturationlabelmin.place(relx=0.392, rely=250.0, height=24
-                , width=29)
+                                      , width=29)
         self.saturationlabelmin.configure(background="#d9d9d9")
         self.saturationlabelmin.configure(foreground="#000000")
         self.saturationlabelmin.configure(font="TkDefaultFont")
@@ -185,14 +189,14 @@ class Toplevel1:
 
         self.saturationmax = ttk.Scale(self.TNotebook1_t3, from_=0, to=255)
         self.saturationmax.place(relx=0.431, rely=220.0, relwidth=0.078
-                , relheight=0.0, height=26, bordermode='ignore')
+                                 , relheight=0.0, height=26, bordermode='ignore')
         self.saturationmax.configure(variable=GUI_support_module.saturationmax)
         self.saturationmax.configure(value="255")
         self.saturationmax.configure(takefocus="")
 
         self.saturationmin = ttk.Scale(self.TNotebook1_t3, from_=0, to=255)
         self.saturationmin.place(relx=0.431, rely=250.0, relwidth=0.078
-                , relheight=0.0, height=26, bordermode='ignore')
+                                 , relheight=0.0, height=26, bordermode='ignore')
         self.saturationmin.configure(variable=GUI_support_module.saturationmin)
         self.saturationmin.configure(takefocus="")
 
@@ -222,41 +226,33 @@ class Toplevel1:
 
         self.valuemax = ttk.Scale(self.TNotebook1_t3, from_=0, to=255)
         self.valuemax.place(relx=0.69, rely=210.0, relwidth=0.078, relheight=0.0
-                , height=26, bordermode='ignore')
+                            , height=26, bordermode='ignore')
         self.valuemax.configure(variable=GUI_support_module.valuemax)
         self.valuemax.configure(value="255")
         self.valuemax.configure(takefocus="")
 
         self.valuemin = ttk.Scale(self.TNotebook1_t3, from_=0, to=255)
         self.valuemin.place(relx=0.69, rely=240.0, relwidth=0.078, relheight=0.0
-                , height=26, bordermode='ignore')
+                            , height=26, bordermode='ignore')
         self.valuemin.configure(variable=GUI_support_module.valuemin)
         self.valuemin.configure(takefocus="")
 
-        self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-        top.configure(menu = self.menubar)
+        self.menubar = tk.Menu(top, font="TkMenuFont", bg=_bgcolor, fg=_fgcolor)
+        top.configure(menu=self.menubar)
 
-        self.sub_menu = tk.Menu(top,tearoff=0)
+        self.sub_menu = tk.Menu(top, tearoff=0)
         self.menubar.add_cascade(menu=self.sub_menu,
-                activebackground="#ececec",
-                activeforeground="#000000",
-                background="#d9d9d9",
-                font="TkMenuFont",
-                foreground="#000000",
-                label="File")
+                                 activebackground="#ececec",
+                                 activeforeground="#000000",
+                                 background="#d9d9d9",
+                                 font="TkMenuFont",
+                                 foreground="#000000",
+                                 label="File")
         self.sub_menu.add_command(
-                activebackground="#ececec",
-                activeforeground="#000000",
-                background="#d9d9d9",
-                command=GUI_support_module.exit,
-                font="TkMenuFont",
-                foreground="#000000",
-                label="Exit")
-
-if __name__ == '__main__':
-    vp_start_gui()
-
-
-
-
-
+            activebackground="#ececec",
+            activeforeground="#000000",
+            background="#d9d9d9",
+            command=GUI_support_module.exit,
+            font="TkMenuFont",
+            foreground="#000000",
+            label="Exit")

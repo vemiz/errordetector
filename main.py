@@ -8,12 +8,11 @@ Det skal ha muligheit for å sette parameter som hsv-verdiar, manuellt croppe bi
 Det skal også croppe dysa ut av bilde ved å spore ein aruco tag.
 Det skal lagre timelapsen når printet er ferdig (bruker styrt).
 """
-import GUI
-
+import first_GUI
+from facade import Facade
 
 def main():
-    GUIApp = GUI.run()
-
+    first_GUI.vp_start_gui()
 
 if __name__ == "__main__":
     main()
