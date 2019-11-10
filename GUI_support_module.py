@@ -5,6 +5,8 @@
 #  in conjunction with Tcl version 8.6
 #    Nov 02, 2019 12:55:42 PM CET  platform: Windows NT
 
+#TODO: DELETE THIS
+
 import sys
 
 try:

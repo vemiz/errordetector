@@ -5,6 +5,8 @@
 #  in conjunction with Tcl version 8.6
 #    Nov 02, 2019 12:58:45 PM CET  platform: Windows NT
 
+#TODO: DELETE THIS
+
 import sys
 
 try:
@@ -113,7 +115,6 @@ class Toplevel1:
         self.Camera_frame.configure(borderwidth="2")
         self.Camera_frame.configure(relief="groove")
         self.Camera_frame.configure(background="#d9d9d9")
-
 
         self.Hue_min = ttk.Scale(self.TNotebook1_t3, from_=0, to=1.0)
         self.Hue_min.place(relx=0.172, rely=250.0, relwidth=0.203, relheight=0.0

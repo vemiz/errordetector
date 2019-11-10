@@ -1,6 +1,8 @@
 """
 Represents an image
 """
+
+#TODO: DELETE THIS
 import camera
 
 

@@ -4,6 +4,7 @@ Represents an camera
 import cv2
 import numpy as np
 
+#TODO: DELETE THIS
 
 class Camera:
 
