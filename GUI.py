@@ -15,6 +15,7 @@ import cv2
 import imutils as imutils
 from camera import Camera
 from PIL import ImageTk, Image
+from camera import Camera
 
 
 class MainApplication:
@@ -96,7 +97,13 @@ class Camerapage:
         self.master.title("Camera")
 
         self.label1 = Label(self.master, text="Put camera frame here!!", font=10).grid(row=2, column=2)
-
+        self.cam = Camera()
+        self.frame = self.cam.get_frame()
+        self.image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+        self.image = Image.fromarray(self.image)
+        self.image = ImageTk.PhotoImage(self.image)
+        panel = Label(image=self.image)
+        panel.grid(row=0, column=0)
 
 def run():
     root = Tk()
