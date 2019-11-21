@@ -103,6 +103,7 @@ class Camerapage:
 
         self.master.protocol('WM_DELETE_WINDOW', self.destructor)
         self.current_image = None
+        print("[INFO] starting camera...")
         self.video_loop()
 
     def video_loop(self):
@@ -117,7 +118,7 @@ class Camerapage:
 
     def destructor(self):
         """ Destroy the root object and release all resources """
-        print("[INFO] closing...")
+        print("[INFO] closing camera...")
         self.master.destroy()
         self.cam.terminate()  # release web camera
         cv2.destroyAllWindows()
