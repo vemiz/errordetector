@@ -5,6 +5,8 @@
 #  in conjunction with Tcl version 8.6
 #    Nov 02, 2019 12:58:45 PM CET  platform: Windows NT
 
+#TODO: DELETE THIS
+
 import sys
 import tkinter as tk
 from tkinter import *
