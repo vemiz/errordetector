@@ -34,7 +34,7 @@ class MainApplication:
         self.starttimelapsebtn = Button(self.master, text="Start timelapse", fg='black',
                                         command=self.starttimelapse).grid(row=6, column=4)
         self.stoptimelapsebtn = Button(self.master, text="Stop timelapse", fg='black',
-                                        command=self.stoptimelapse).grid(row=6, column=5)
+                                       command=self.stoptimelapse).grid(row=6, column=5)
 
         self.folderPath = StringVar()
 
@@ -93,17 +93,35 @@ class MainApplication:
 class Camerapage:
     def __init__(self, master):
         self.master = master
-        self.master.geometry("1280x720")
+        self.master.geometry("1960x1120")
         self.master.title("Camera")
 
-        self.label1 = Label(self.master, text="Put camera frame here!!", font=10).grid(row=2, column=2)
         self.cam = Camera()
-        self.frame = self.cam.get_frame()
-        self.image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        self.image = Image.fromarray(self.image)
-        self.image = ImageTk.PhotoImage(self.image)
-        panel = Label(image=self.image)
-        panel.grid(row=0, column=0)
+
+        self.panel = tk.Label(self.master)  # initialize image panel
+        self.panel.pack(padx=10, pady=10)
+
+        self.master.protocol('WM_DELETE_WINDOW', self.destructor)
+        self.current_image = None
+        self.video_loop()
+
+    def video_loop(self):
+        ret, frame = self.cam.get_raw_frame()
+        if ret:
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.current_image = Image.fromarray(image)
+            imgtk = ImageTk.PhotoImage(image=self.current_image)
+            self.panel.imgtk = imgtk
+            self.panel.config(image=imgtk)
+        self.master.after(30, self.video_loop)
+
+    def destructor(self):
+        """ Destroy the root object and release all resources """
+        print("[INFO] closing...")
+        self.master.destroy()
+        self.cam.terminate()  # release web camera
+        cv2.destroyAllWindows()
+
 
 def run():
     root = Tk()
