@@ -34,12 +34,9 @@ class Camera:
                     return ret, self.frame
                 else:
                     return ret, None
-            # if self.stop_threads:
-            #    break
 
     def terminate(self):
         self.cam.release()
-        #Thread.
 
     def __del__(self):
         if self.cam.isOpened():

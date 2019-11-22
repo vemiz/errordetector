@@ -32,8 +32,8 @@ class MainApplication():
         self.facade = Facade()
         self.root = Tk()
         self.mainwindow = MainWindow(self.root, facade=self.facade)
-        #threading.Thread.__init__(self)
-        #self.start()
+        # threading.Thread.__init__(self)
+        # self.start()
 
     def run(self):
         self.mainwindow.run()
@@ -75,17 +75,17 @@ class MainWindow:
         self.folderPath = StringVar()
 
         # HSV variables. TODO: Sjekk om dei bør flyttast til fasade/GUIsupportmodule
-        self._hue_max = tk.DoubleVar()
+        self._hue_max = tk.IntVar()
         self._hue_max.set(179)
-        self._hue_min = tk.DoubleVar()
+        self._hue_min = tk.IntVar()
         self._hue_min.set(0)
-        self._sat_max = tk.DoubleVar()
+        self._sat_max = tk.IntVar()
         self._sat_max.set(255)
-        self._sat_min = tk.DoubleVar()
+        self._sat_min = tk.IntVar()
         self._sat_min.set(0)
-        self._val_max = tk.DoubleVar()
+        self._val_max = tk.IntVar()
         self._val_max.set(255)
-        self._val_min = tk.DoubleVar()
+        self._val_min = tk.IntVar()
         self._val_min.set(0)
 
         # Hue
@@ -114,7 +114,6 @@ class MainWindow:
         self.updater()
         self.root.mainloop()
 
-
     def sethsvvalues(self):
         self.hsv_low = np.array([self._hue_min.get(), self._sat_min.get(), self._val_min.get()])
         self.hsv_high = np.array([self._hue_max.get(), self._sat_max.get(), self._val_max.get()])
@@ -126,9 +125,12 @@ class MainWindow:
         self.root.after(1, self.updater)
 
     def opencamerapage(self):
-        self.camerapage = Camerapage(facade=self.facade)
         global camerapageopen
-        camerapageopen = True
+        if not camerapageopen:
+            self.camerapage = Camerapage(facade=self.facade)
+            camerapageopen = True
+        else:
+            print("[INFO] Camera is already open..")
 
     def getcamerapage(self):
         return self.camerapage
@@ -157,7 +159,6 @@ class MainWindow:
                 print("[INFO] Adding mask")
         else:
             print("[INFO] Camera page is not open...")
-
 
 
 class Camerapage:

@@ -23,14 +23,10 @@ class Processor:
         self.hsv_high = hsvhigh
         ret, frame = cam.get_video_stream()
         if ret and (self.hsv_low is not None):
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            # invimage = cv2.bitwise_not(image)
-            # self.hsv_low = np.array([30, 150, 50])
-            # self.hsv_high = np.array([255, 255, 180])
-            # self.hsv_high, self.hsv_low = self.hsv_mask()
-
-            mask = cv2.inRange(image, self.hsv_low, self.hsv_high)
-            maskedimg = cv2.bitwise_and(image, image, mask=mask)
+            hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            rgbimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)
+            maskedimg = cv2.bitwise_and(rgbimage, rgbimage, mask=mask)
             self.current_image = Image.fromarray(maskedimg)
             return self.current_image
         else:
