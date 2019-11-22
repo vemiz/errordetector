@@ -11,7 +11,7 @@ class Processor:
 
     def get_clean_video_stream(self, camera):
         cam = camera
-        ret, frame = cam.get_raw_frame()
+        ret, frame = cam.get_video_stream()
         if ret:
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.current_image = Image.fromarray(image)
@@ -21,7 +21,7 @@ class Processor:
         cam = camera
         self.hsv_low = hsvlow
         self.hsv_high = hsvhigh
-        ret, frame = cam.get_raw_frame()
+        ret, frame = cam.get_video_stream()
         if ret and (self.hsv_low is not None):
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             # invimage = cv2.bitwise_not(image)

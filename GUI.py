@@ -7,7 +7,7 @@ Den skal ha eit vindu for å loope timelapsen.
 Den skal ha ei status linje, som skal varsle om feil blir oppdaga. Denne skal vere synlig i alle vindu.
 Den skal ha knappar for å skifte vindu.
 """
-# import threading
+import threading
 import tkinter as tk
 from tkinter import ttk, filedialog
 from tkinter import *
@@ -26,15 +26,14 @@ applymask = False
 
 
 # TODO: Sjekk om ej trenge å arve threding
-class MainApplication:
-
-    facade = None
+class MainApplication():
 
     def __init__(self):
         self.facade = Facade()
         self.root = Tk()
         self.mainwindow = MainWindow(self.root, facade=self.facade)
-        self.camerapage = None
+        #threading.Thread.__init__(self)
+        #self.start()
 
     def run(self):
         self.mainwindow.run()
@@ -112,14 +111,19 @@ class MainWindow:
                                    orient=HORIZONTAL, variable=self._val_min).grid(row=12, column=3)
 
         # Start it all
+        self.updater()
         self.root.mainloop()
 
 
     def sethsvvalues(self):
-        self.hsv_low = np.array([self._hue_min, self._sat_min, self._val_min])
-        self.hsv_high = np.array([self._hue_max, self._sat_max, self._val_max])
+        self.hsv_low = np.array([self._hue_min.get(), self._sat_min.get(), self._val_min.get()])
+        self.hsv_high = np.array([self._hue_max.get(), self._sat_max.get(), self._val_max.get()])
         self.facade.sethsvlow(value=self.hsv_low)
         self.facade.sethsvhigh(value=self.hsv_high)
+
+    def updater(self):
+        self.sethsvvalues()
+        self.root.after(1, self.updater)
 
     def opencamerapage(self):
         self.camerapage = Camerapage(facade=self.facade)
@@ -142,7 +146,6 @@ class MainWindow:
 
     def addmask(self):
         if camerapageopen:
-            self.sethsvvalues()
             global applymask
             if self.addmaskbtn.config('relief')[-1] == 'sunken':
                 self.addmaskbtn.config(relief="raised", text="Add Mask")
@@ -154,6 +157,7 @@ class MainWindow:
                 print("[INFO] Adding mask")
         else:
             print("[INFO] Camera page is not open...")
+
 
 
 class Camerapage:
