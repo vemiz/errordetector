@@ -3,12 +3,37 @@ Facaden skal koble GUIen til ei rekke av klasser for å beholde lesbarheit og st
 Denne makerer meir komplekse underliggende strukturer, og gjer at ein får enkapsling. Altså eit interface for subsystem.
 """
 from camera import Camera
+from imageprocessor import Processor
+from tkinter import *
+
 
 class Facade:
     def __init__(self):
-        self.camera = Camera()
-        #self._subsystem_2 = Subsystem2()
+        self._camera = Camera()
+        self._processor = Processor()
 
-    def get_camera_frame(self):
-        self.camera.get_frame()
+    def startcamera(self):
+        self._camera.start()
 
+    def getprocessor(self):
+        return self._processor()
+
+    def getcamera(self):
+        return self._camera()
+
+    def sethsvhigh(self, value):
+        self.hsvhigh = value
+
+    def sethsvlow(self, value):
+        self.hsvlow = value
+
+    def getmaskedvideo(self):
+        self.maskedframe = self._processor.get_masked_video(self._camera, hsvhigh=self.hsvhigh,hsvlow=self.hsvlow)
+        return self.maskedframe
+
+    def getcleanvideo(self):
+        self.cleanframe = self._processor.get_clean_video_stream(self._camera)
+        return self.cleanframe
+
+    def terminatecamera(self):
+        self._camera.terminate()
