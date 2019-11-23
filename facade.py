@@ -10,7 +10,7 @@ from tkinter import *
 class Facade:
     def __init__(self):
         self._camera = Camera()
-        self._processor = Processor()
+        self._processor = Processor(self)
 
     def startcamera(self):
         self._camera.start()
@@ -18,8 +18,8 @@ class Facade:
     def getprocessor(self):
         return self._processor()
 
-    def getcamera(self):
-        return self._camera()
+    def getcameraframe(self):
+        return self._camera.get_video_frame()
 
     def sethsvhigh(self, value):
         self.hsvhigh = value
@@ -28,11 +28,11 @@ class Facade:
         self.hsvlow = value
 
     def getmaskedvideo(self):
-        self.maskedframe = self._processor.get_masked_video(self._camera, hsvhigh=self.hsvhigh,hsvlow=self.hsvlow)
+        self.maskedframe = self._processor.get_masked_video(hsvhigh=self.hsvhigh,hsvlow=self.hsvlow)
         return self.maskedframe
 
     def getcleanvideo(self):
-        self.cleanframe = self._processor.get_clean_video_stream(self._camera)
+        self.cleanframe = self._processor.get_clean_video_stream()
         return self.cleanframe
 
     def terminatecamera(self):

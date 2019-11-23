@@ -6,23 +6,22 @@ from camera import Camera
 
 
 class Processor:
-    def __init__(self):
-        self.current_image = None
+    def __init__(self, facade):
+        self.facade = facade
 
-    def get_clean_video_stream(self, camera):
-        cam = camera
-        ret, frame = cam.get_video_stream()
-        if ret:
+    def get_clean_video_stream(self):
+        frame = self.facade.getcameraframe()
+        # Check if frame is empty. The first few at camera startup will be.
+        if np.any(frame):
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.current_image = Image.fromarray(image)
             return self.current_image
 
-    def get_masked_video(self, camera, hsvlow, hsvhigh):
-        cam = camera
+    def get_masked_video(self, hsvlow, hsvhigh):
         self.hsv_low = hsvlow
         self.hsv_high = hsvhigh
-        ret, frame = cam.get_video_stream()
-        if ret and (self.hsv_low is not None):
+        frame = self.facade.getcameraframe()
+        if self.hsv_low is not None:
             hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             rgbimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)

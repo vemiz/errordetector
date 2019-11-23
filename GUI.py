@@ -42,7 +42,7 @@ class MainApplication():
         return self.facade()
 
     def getcamera(self):
-        return self.facade.getcamera()
+        return self.facade.getcameraframe()
 
     def getprocessor(self):
         return self.facade.getprocessor()
@@ -53,28 +53,30 @@ class MainWindow:
     def __init__(self, root, facade):
         self.facade = facade
         self.root = root
-        self.root.geometry("640x480")
+        self.root.geometry("800x400")
         self.root.title("3D print error detection")
         self.label1 = Label(self.root, text="Error detection", fg='black')
 
     def run(self):
-
-        self.startcamerabtn = Button(self.root, text="Start camera", fg='black', command=self.opencamerapage)
-        self.startcamerabtn.grid(row=6, column=2)
+        # Buttons
+        self.startcamerabtn = Button(self.root, text="Start camera", width=14,
+                                     relief="raised", fg='black', command=self.opencamerapage)
         self.quitbtn = Button(self.root, text="Quit", fg='black', command=self.quit)
         self.starttimelapsebtn = Button(self.root, text="Start timelapse", fg='black', command=self.starttimelapse)
         self.stoptimelapsebtn = Button(self.root, text="Stop timelapse", fg='black', command=self.stoptimelapse)
         self.addmaskbtn = Button(self.root, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
-
+        # Placing elements
         self.label1.grid(row=0, column=2)
-        self.addmaskbtn.grid(row=6, column=3)
+        self.startcamerabtn.grid(row=6, column=2)
         self.quitbtn.grid(row=6, column=6)
         self.starttimelapsebtn.grid(row=6, column=4)
         self.stoptimelapsebtn.grid(row=6, column=5)
+        self.addmaskbtn.grid(row=6, column=3)
+
         self.folderPath = StringVar()
 
-        # HSV variables. TODO: Sjekk om dei bør flyttast til fasade/GUIsupportmodule
+        # HSV variables
         self._hue_max = tk.IntVar()
         self._hue_max.set(179)
         self._hue_min = tk.IntVar()
@@ -88,27 +90,34 @@ class MainWindow:
         self._val_min = tk.IntVar()
         self._val_min.set(0)
 
-        # Hue
-        self.hue_max_label = Label(self.root, text="Hue max", fg='black').grid(row=7, column=2)
-        self.hue_max_scale = Scale(self.root, from_=0, to=179, length=200,
-                                   orient=HORIZONTAL, variable=self._hue_max).grid(row=7, column=3)
-        self.hue_min_label = Label(self.root, text="Hue min", fg='black').grid(row=8, column=2)
-        self.hue_min_scale = Scale(self.root, from_=0, to=179, length=200,
-                                   orient=HORIZONTAL, variable=self._hue_min).grid(row=8, column=3)
+        # Hue, Saturation, Value
+        self.hue_max_label = Label(self.root, text="Hue max", fg='black')
+        self.hue_max_scale = Scale(self.root, from_=0, to=179, length=200, orient=HORIZONTAL, variable=self._hue_max)
+        self.hue_min_label = Label(self.root, text="Hue min", fg='black')
+        self.hue_min_scale = Scale(self.root, from_=0, to=179, length=200, orient=HORIZONTAL, variable=self._hue_min)
+        self.sat_max_label = Label(self.root, text="Saturation max", fg='black')
+        self.sat_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._sat_max)
+        self.sat_min_label = Label(self.root, text="Saturation min", fg='black')
+        self.sat_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._sat_min)
+        self.val_max_label = Label(self.root, text="Value max", fg='black')
+        self.val_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_max)
+        self.val_min_label = Label(self.root, text="Value min", fg='black')
+        self.val_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_min)
+
+        self.hue_max_label.grid(row=7, column=2)
+        self.hue_max_scale.grid(row=7, column=3)
+        self.hue_min_label.grid(row=8, column=2)
+        self.hue_min_scale.grid(row=8, column=3)
         # Saturation
-        self.sat_max_label = Label(self.root, text="Saturation max", fg='black').grid(row=9, column=2)
-        self.sat_max_scale = Scale(self.root, from_=0, to=255, length=200,
-                                   orient=HORIZONTAL, variable=self._sat_max).grid(row=9, column=3)
-        self.sat_min_label = Label(self.root, text="Saturation min", fg='black').grid(row=10, column=2)
-        self.sat_min_scale = Scale(self.root, from_=0, to=255, length=200,
-                                   orient=HORIZONTAL, variable=self._sat_min).grid(row=10, column=3)
+        self.sat_max_label.grid(row=9, column=2)
+        self.sat_max_scale.grid(row=9, column=3)
+        self.sat_min_label.grid(row=10, column=2)
+        self.sat_min_scale.grid(row=10, column=3)
         # Value
-        self.val_max_label = Label(self.root, text="Value max", fg='black').grid(row=11, column=2)
-        self.val_max_scale = Scale(self.root, from_=0, to=255, length=200,
-                                   orient=HORIZONTAL, variable=self._val_max).grid(row=11, column=3)
-        self.val_min_label = Label(self.root, text="Value min", fg='black').grid(row=12, column=2)
-        self.val_min_scale = Scale(self.root, from_=0, to=255, length=200,
-                                   orient=HORIZONTAL, variable=self._val_min).grid(row=12, column=3)
+        self.val_max_label.grid(row=11, column=2)
+        self.val_max_scale.grid(row=11, column=3)
+        self.val_min_label.grid(row=12, column=2)
+        self.val_min_scale.grid(row=12, column=3)
 
         # Start it all
         self.updater()
@@ -126,11 +135,19 @@ class MainWindow:
 
     def opencamerapage(self):
         global camerapageopen
+        if self.startcamerabtn.config('relief')[-1] == 'sunken':
+            self.startcamerabtn.config(relief="raised", text="Start Camera")
+        else:
+            self.startcamerabtn.config(relief="sunken", text="Stop Camera")
+
         if not camerapageopen:
             self.camerapage = Camerapage(facade=self.facade)
             camerapageopen = True
         else:
-            print("[INFO] Camera is already open..")
+            self.stopcamerapage()
+
+    def stopcamerapage(self):
+        self.camerapage.destructor()
 
     def getcamerapage(self):
         return self.camerapage
@@ -166,7 +183,6 @@ class Camerapage:
         self.root = Toplevel()
         self.facade = facade
         self.facade.startcamera()
-        self.root.geometry("1960x1120")
         self.root.title("Camera")
 
         self.panel = tk.Label(self.root)  # initialize image panel
@@ -179,24 +195,24 @@ class Camerapage:
 
     def video_loop(self):
         global applymask
-        if applymask:
-            self.current_image = self.facade.getmaskedvideo()
-            imgtk = ImageTk.PhotoImage(image=self.current_image)
-            self.panel.imgtk = imgtk
-            self.panel.config(image=imgtk)
-        else:
-            self.current_image = self.facade.getcleanvideo()
-            imgtk = ImageTk.PhotoImage(image=self.current_image)
-            self.panel.imgtk = imgtk
-            self.panel.config(image=imgtk)
+        if self.facade.getcleanvideo():
+            if applymask:
+                self.current_image = self.facade.getmaskedvideo()
+                imgtk = ImageTk.PhotoImage(image=self.current_image)
+                self.panel.imgtk = imgtk
+                self.panel.config(image=imgtk)
+            else:
+                self.current_image = self.facade.getcleanvideo()
+                imgtk = ImageTk.PhotoImage(image=self.current_image)
+                self.panel.imgtk = imgtk
+                self.panel.config(image=imgtk)
 
-        self.root.after(30, self.video_loop)
+        self.root.after(10, self.video_loop)
 
     def destructor(self):
         """ Destroy the root object and release all resources """
         print("[INFO] closing camera...")
         self.root.destroy()
-        self.facade.terminatecamera()
         global camerapageopen
         camerapageopen = False
-        cv2.destroyAllWindows()
+
