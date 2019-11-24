@@ -130,6 +130,7 @@ class MainWindow:
         self.facade.sethsvhigh(value=self.hsv_high)
 
     def updater(self):
+        self.facade.gettriggerpress()
         self.sethsvvalues()
         self.root.after(1, self.updater)
 
