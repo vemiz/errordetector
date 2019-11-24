@@ -7,19 +7,13 @@ Den skal ha eit vindu for å loope timelapsen.
 Den skal ha ei status linje, som skal varsle om feil blir oppdaga. Denne skal vere synlig i alle vindu.
 Den skal ha knappar for å skifte vindu.
 """
-import threading
 import tkinter as tk
 from tkinter import ttk, filedialog
 from tkinter import *
-import cv2
-import imutils as imutils
 import numpy as np
-
-from camera import Camera
 from PIL import ImageTk, Image
-from camera import Camera
-from imageprocessor import Processor
 from facade import Facade
+import json
 
 camerapageopen = False
 applymask = False
@@ -32,8 +26,6 @@ class MainApplication():
         self.facade = Facade()
         self.root = Tk()
         self.mainwindow = MainWindow(self.root, facade=self.facade)
-        # threading.Thread.__init__(self)
-        # self.start()
 
     def run(self):
         self.mainwindow.run()
@@ -56,6 +48,7 @@ class MainWindow:
         self.root.geometry("800x400")
         self.root.title("3D print error detection")
         self.label1 = Label(self.root, text="Error detection", fg='black')
+        self._hsvpreset = {}
 
     def run(self):
         # Buttons
@@ -66,13 +59,20 @@ class MainWindow:
         self.stoptimelapsebtn = Button(self.root, text="Stop timelapse", fg='black', command=self.stoptimelapse)
         self.addmaskbtn = Button(self.root, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
+        self.hsvresetbtn = Button(self.root, text="Reset HSV", fg='black', command=self.hsvreset)
+        self.hsvpresetbtn = Button(self.root, text="Save HSV Preset", fg='black', command=self.savehsvpreset)
+        self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
+
         # Placing elements
         self.label1.grid(row=0, column=2)
         self.startcamerabtn.grid(row=6, column=2)
         self.quitbtn.grid(row=6, column=6)
         self.starttimelapsebtn.grid(row=6, column=4)
         self.stoptimelapsebtn.grid(row=6, column=5)
-        self.addmaskbtn.grid(row=6, column=3)
+        self.addmaskbtn.grid(row=7, column=4)
+        self.hsvresetbtn.grid(row=8, column=4)
+        self.hsvpresetbtn.grid(row=9, column=4)
+        self.usehsvpresetbtn.grid(row=10, column=4)
 
         self.folderPath = StringVar()
 
@@ -123,6 +123,35 @@ class MainWindow:
         self.updater()
         self.root.mainloop()
 
+    def hsvreset(self):
+        self._hue_max.set(179)
+        self._hue_min.set(0)
+        self._sat_max.set(255)
+        self._sat_min.set(0)
+        self._val_max.set(255)
+        self._val_min.set(0)
+
+    # https://www.youtube.com/watch?v=rz1NFzMSJGY
+    def savehsvpreset(self):
+        self._hsvpreset['Hue max'] = str(self._hue_max.get())
+        self._hsvpreset['Hue min'] = str(self._hue_min.get())
+        self._hsvpreset['Sat max'] = str(self._sat_max.get())
+        self._hsvpreset['Sat min'] = str(self._sat_min.get())
+        self._hsvpreset['Val max'] = str(self._val_max.get())
+        self._hsvpreset['Val min'] = str(self._val_min.get())
+        with open('hsv_presets.json', 'w') as f:
+            json.dump(self._hsvpreset, f)
+
+    def usehsvpreset(self):
+        f = open('hsv_presets.json')
+        self._hsvpreset = json.load(f)
+        self._hue_max.set(self._hsvpreset['Hue max'])
+        self._hue_min.set(self._hsvpreset['Hue min'])
+        self._sat_max.set(self._hsvpreset['Sat max'])
+        self._sat_min.set(self._hsvpreset['Sat min'])
+        self._val_max.set(self._hsvpreset['Val max'])
+        self._val_min.set(self._hsvpreset['Val min'])
+
     def sethsvvalues(self):
         self.hsv_low = np.array([self._hue_min.get(), self._sat_min.get(), self._val_min.get()])
         self.hsv_high = np.array([self._hue_max.get(), self._sat_max.get(), self._val_max.get()])
@@ -130,7 +159,7 @@ class MainWindow:
         self.facade.sethsvhigh(value=self.hsv_high)
 
     def updater(self):
-        self.facade.gettriggerpress()
+        #self.facade.gettriggerpress()
         self.sethsvvalues()
         self.root.after(1, self.updater)
 

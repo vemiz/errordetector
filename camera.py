@@ -9,9 +9,9 @@ from threading import Thread
 class Camera:
     def __init__(self):
         self.videosrc = 0
-        self.resolution = (1088, 720)  # (3280, 2464) (1088, 720)
-        self.framerate = 32
-        self.usepicamera = True
+        self.resolution = (640, 480)  # (3280, 2464) (1088, 720) (640, 480)
+        self.framerate = 30
+        self.usepicamera = False
         self.frame = None
         self.stopped = False
         if self.usepicamera:
@@ -29,14 +29,13 @@ class Camera:
             time.sleep(1)
         else:
             self.cam = cv2.VideoCapture(self.videosrc, cv2.CAP_DSHOW)
-            self.ret, self.frame = self.cam.read()
             if not self.cam.isOpened():
                 raise ValueError("Unable to open video source", self.videosrc)
             self.cam.set(cv2.CAP_PROP_AUTOFOCUS, False)
             self.cam.set(cv2.CAP_PROP_FOCUS, 0.0)
-            self.cam.set(3, self.resolution[0])
-            self.cam.set(4, self.resolution[1])
-            self.cam.set(cv2.CAP_PROP_FPS, self.framerate)
+            #self.cam.set(3, self.resolution[0])
+            #self.cam.set(4, self.resolution[1])
+            #self.cam.set(cv2.CAP_PROP_FPS, self.framerate)
             # self.cam.set(cv2.CAP_PROP_BUFFERSIZE, 10
         # Start deamon thread when camera initialises
         self.t1 = Thread(target=self.update, daemon=True, args=())
@@ -61,9 +60,7 @@ class Camera:
             while True:
                 if self.cam.isOpened():
                     self.ret, self.frame = self.cam.read()
-                    if self.ret:
-                        return self.frame
-                    else:
+                    if not self.ret:
                         print("[ERROR] Cant read frame from camera")
 
     def get_video_frame(self):

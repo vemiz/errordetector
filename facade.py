@@ -4,7 +4,7 @@ Denne makerer meir komplekse underliggende strukturer, og gjer at ein får enkap
 """
 from camera import Camera
 from imageprocessor import Processor
-from trigger import Trigger
+#from trigger import Trigger
 from tkinter import *
 
 
@@ -12,7 +12,7 @@ class Facade:
     def __init__(self):
         self._camera = Camera()
         self._processor = Processor(self)
-        self._trigger = Trigger()
+        #self._trigger = Trigger()
 
     def startcamera(self):
         self._camera.start()
