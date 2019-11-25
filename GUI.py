@@ -10,12 +10,16 @@ Den skal ha knappar for å skifte vindu.
 import tkinter as tk
 from tkinter import ttk, filedialog
 from tkinter import *
+
+import PIL
 import numpy as np
 from PIL import ImageTk, Image
 from facade import Facade
 import json
 
+useRPi = True
 camerapageopen = False
+imagepageopen = False
 applymask = False
 invertedmask = False
 
@@ -24,7 +28,7 @@ invertedmask = False
 class MainApplication():
 
     def __init__(self):
-        self.facade = Facade()
+        self.facade = Facade(useRPi)
         self.root = Tk()
         self.mainwindow = MainWindow(self.root, facade=self.facade)
 
@@ -73,6 +77,8 @@ class MainWindow:
         self.hsvpresetbtn = Button(self.root, text="Save HSV Preset", fg='black', command=self.savehsvpreset)
         self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
         self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1], self._hsvpresets[2])
+        self.prntbtn = Button(self.root, text="Print", command=self.facade.printregister)
+        self.startimgpagebtn = Button(self.root, text="Start Image display", relief="raised", command=self.openimagepage)
 
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
@@ -89,6 +95,8 @@ class MainWindow:
         self.hsvpresetbtn.grid(row=9, column=4)
         self.usehsvpresetbtn.grid(row=10, column=4)
         self.presetmenu.grid(row=11, column=4)
+        self.prntbtn.grid(row=12, column=4)
+        self.startimgpagebtn.grid(row=8, column=5)
 
         self.folderPath = StringVar()
 
@@ -189,7 +197,8 @@ class MainWindow:
         self.facade.sethsvhigh(value=self.hsv_high)
 
     def updater(self):
-        #self.facade.gettriggerpress()
+        #if useRPi:
+        self.facade.gettriggerpress()
         self.sethsvvalues()
         self.root.after(1, self.updater)
 
@@ -206,8 +215,27 @@ class MainWindow:
         else:
             self.stopcamerapage()
 
+    def openimagepage(self):
+        global imagepageopen
+        if self.startimgpagebtn.config('relief')[-1] == 'sunken':
+            self.startimgpagebtn.config(relief="raised", text="Start Image display")
+        else:
+            self.startimgpagebtn.config(relief="sunken", text="Stop Image display")
+
+        if not imagepageopen:
+            if not self.facade.isregempty():
+                self.imagepageopen = Imagepage(facade=self.facade)
+                imagepageopen = True
+            else:
+                print("Image register is empty!!")
+        else:
+            self.stopimagepage()
+
     def stopcamerapage(self):
         self.camerapage.destructor()
+
+    def stopimagepage(self):
+        self.imagepageopen.destructor()
 
     def getcamerapage(self):
         return self.camerapage
@@ -291,3 +319,34 @@ class Camerapage:
         global camerapageopen
         camerapageopen = False
 
+
+class Imagepage:
+    def __init__(self, facade):
+        self.root = Toplevel()
+        self.facade = facade
+        self.root.title("Image Page")
+
+        self.panel = tk.Label(self.root)  # initialize image panel
+        self.panel.pack(padx=10, pady=10)
+
+        self.root.protocol('WM_DELETE_WINDOW', self.destructor)
+        self.current_image = None
+
+        self.image_loop()
+
+    def image_loop(self):
+
+        self.current_image = self.facade.getlastimage()
+        PIL.Image.fromarray
+        imgtk = ImageTk.PhotoImage(image=PIL.Image.fromarray(self.current_image))
+        self.panel.imgtk = imgtk
+        self.panel.config(image=imgtk)
+
+        self.root.after(100, self.image_loop)
+
+    def destructor(self):
+        """ Destroy the root object and release all resources """
+        print("[INFO] closing image...")
+        self.root.destroy()
+        global imagepageopen
+        imagepageopen = False

@@ -2,22 +2,24 @@
 Represents a trigger.
 Used to trigger camera on physical button press
 """
-import RPi.GPIO as GPIO
+
 import threading
 from time import sleep
 
-GPIO.setmode(GPIO.BOARD)
-
 
 class Trigger(threading.Thread):
-    def __init__(self):
+    def __init__(self, useRPi):
         threading.Thread.__init__(self)
         self._pressed = False
+        self._useRPi = useRPi
         self.channel = 16
-        # print("[INFO] Trigger started")
+        self._keybtn = 'b'
 
-        GPIO.setup(self.channel, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        # GPIO.add_event_detect(self.channel, GPIO.RISING, callback= , bouncetime=3000)
+        if self._useRPi:
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setup(self.channel, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
         self.daemon = True
         self.start()
 
@@ -31,8 +33,14 @@ class Trigger(threading.Thread):
     def run(self):
         previous = None
         while 1:
-            current = GPIO.input(self.channel)
-            sleep(0.01)
+            if self._useRPi:
+                import RPi.GPIO as GPIO  # Second import as workaround for NameError: name 'GPIO' is not defined
+                current = GPIO.input(self.channel)
+                sleep(0.01)
+            else:
+                import keyboard
+                current = keyboard.is_pressed(self._keybtn)
+                pass
 
             if current == True and previous == False:
                 self._pressed = True
@@ -40,6 +48,3 @@ class Trigger(threading.Thread):
                 while self._pressed:
                     sleep(0.1)
             previous = current
-
-
-

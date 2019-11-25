@@ -7,11 +7,11 @@ from threading import Thread
 
 
 class Camera:
-    def __init__(self):
+    def __init__(self, useRPi):
         self.videosrc = 0
         self.resolution = (640, 480)  # (3280, 2464) (1088, 720) (640, 480)
         self.framerate = 30
-        self.usepicamera = False
+        self.usepicamera = useRPi
         self.frame = None
         self.stopped = False
         if self.usepicamera:

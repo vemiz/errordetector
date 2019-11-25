@@ -4,15 +4,16 @@ Denne makerer meir komplekse underliggende strukturer, og gjer at ein får enkap
 """
 from camera import Camera
 from imageprocessor import Processor
-#from trigger import Trigger
 from tkinter import *
 from imageregister import Imageregister
+from trigger import Trigger
 
 class Facade:
-    def __init__(self):
-        self._camera = Camera()
+    def __init__(self, useRPi):
+        self._useRPi = useRPi
+        self._camera = Camera(self._useRPi)
         self._processor = Processor(self)
-        #self._trigger = Trigger()
+        self._trigger = Trigger(self._useRPi)
         self._imageregister = Imageregister()
 
     def startcamera(self):
@@ -50,6 +51,8 @@ class Facade:
         if True:
             if self._trigger.pressed():
                 self.onbuttonpress()
+        # else:
+        #    print("RPi not in use!!!!!!")
 
     # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
     def comparelastimages(self):
@@ -57,5 +60,14 @@ class Facade:
         lastframe = self._imageregister.getlastframe()
         diff = self._processor.get_image_diff(currentframe, lastframe)
         print(diff)
+
+    def getlastimage(self):
+        return self._imageregister.getcurrentframe()
+
+    def printregister(self):
+        self._imageregister.printlist()
+
+    def isregempty(self):
+        return self._imageregister.isempty()
 
 

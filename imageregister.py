@@ -1,4 +1,4 @@
-
+import cv2
 
 class Imageregister:
     def __init__(self):
@@ -6,8 +6,15 @@ class Imageregister:
         self._currentframe = None
         self._lastframe = None
 
+    def isempty(self):
+        if len(self._imglist) == 0:
+            return True
+        else:
+            False
+
     def addimg(self, image):
-        self._imglist.append(image)
+        img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self._imglist.append(img)
 
     def getcurrentframe(self):
         self._currentframe = self._imglist[-1]
@@ -19,4 +26,5 @@ class Imageregister:
 
     # For debugging TODO: Remove when satisfying result
     def printlist(self):
-        print(self._imglist)
+        print(len(self._imglist))
+        # cv2.imshow('Current Image', self._imglist[-1])
