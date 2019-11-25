@@ -6,13 +6,14 @@ from camera import Camera
 from imageprocessor import Processor
 #from trigger import Trigger
 from tkinter import *
-
+from imageregister import Imageregister
 
 class Facade:
     def __init__(self):
         self._camera = Camera()
         self._processor = Processor(self)
         #self._trigger = Trigger()
+        self._imageregister = Imageregister()
 
     def startcamera(self):
         self._camera.start()
@@ -29,8 +30,8 @@ class Facade:
     def sethsvlow(self, value):
         self.hsvlow = value
 
-    def getmaskedvideo(self):
-        self.maskedframe = self._processor.get_masked_video(hsvhigh=self.hsvhigh,hsvlow=self.hsvlow)
+    def getmaskedvideo(self, inverted):
+        self.maskedframe = self._processor.get_masked_video(hsvhigh=self.hsvhigh,hsvlow=self.hsvlow, inverted=inverted)
         return self.maskedframe
 
     def getcleanvideo(self):
@@ -41,6 +42,8 @@ class Facade:
         self._camera.terminate()
 
     def onbuttonpress(self):
+        frame = self.getcameraframe()
+        self._imageregister.addimg(frame)
         print("[INFO] The button was pressed")
 
     def gettriggerpress(self):
@@ -48,6 +51,11 @@ class Facade:
             if self._trigger.pressed():
                 self.onbuttonpress()
 
-
+    # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
+    def comparelastimages(self):
+        currentframe = self._imageregister.getcurrentframe()
+        lastframe = self._imageregister.getlastframe()
+        diff = self._processor.get_image_diff(currentframe, lastframe)
+        print(diff)
 
 

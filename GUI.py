@@ -17,6 +17,7 @@ import json
 
 camerapageopen = False
 applymask = False
+invertedmask = False
 
 
 # TODO: Sjekk om ej trenge å arve threding
@@ -49,6 +50,13 @@ class MainWindow:
         self.root.title("3D print error detection")
         self.label1 = Label(self.root, text="Error detection", fg='black')
         self._hsvpreset = {}
+        self._hsvpresets = [
+            "Color1",
+            "Color2",
+            "Color3",
+        ]
+
+        self._hsvcolor = tk.StringVar(self.root)
 
     def run(self):
         # Buttons
@@ -59,9 +67,15 @@ class MainWindow:
         self.stoptimelapsebtn = Button(self.root, text="Stop timelapse", fg='black', command=self.stoptimelapse)
         self.addmaskbtn = Button(self.root, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
+        self.invertmaskbtn = Button(self.root, text="Invert Mask", width=14, relief="raised", fg='black',
+                                 command=self.invertmask)
         self.hsvresetbtn = Button(self.root, text="Reset HSV", fg='black', command=self.hsvreset)
         self.hsvpresetbtn = Button(self.root, text="Save HSV Preset", fg='black', command=self.savehsvpreset)
         self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
+        self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1], self._hsvpresets[2])
+
+        self._hsvcolor.set(self._hsvpresets[0])
+        self._hsvcolor.trace("w", self.setpreset)
 
         # Placing elements
         self.label1.grid(row=0, column=2)
@@ -70,9 +84,11 @@ class MainWindow:
         self.starttimelapsebtn.grid(row=6, column=4)
         self.stoptimelapsebtn.grid(row=6, column=5)
         self.addmaskbtn.grid(row=7, column=4)
+        self.invertmaskbtn.grid(row=7, column=5)
         self.hsvresetbtn.grid(row=8, column=4)
         self.hsvpresetbtn.grid(row=9, column=4)
         self.usehsvpresetbtn.grid(row=10, column=4)
+        self.presetmenu.grid(row=11, column=4)
 
         self.folderPath = StringVar()
 
@@ -123,6 +139,9 @@ class MainWindow:
         self.updater()
         self.root.mainloop()
 
+    def setpreset(self, *args):
+        self.usehsvpreset()
+
     def hsvreset(self):
         self._hue_max.set(179)
         self._hue_min.set(0)
@@ -133,24 +152,35 @@ class MainWindow:
 
     # https://www.youtube.com/watch?v=rz1NFzMSJGY
     def savehsvpreset(self):
-        self._hsvpreset['Hue max'] = str(self._hue_max.get())
-        self._hsvpreset['Hue min'] = str(self._hue_min.get())
-        self._hsvpreset['Sat max'] = str(self._sat_max.get())
-        self._hsvpreset['Sat min'] = str(self._sat_min.get())
-        self._hsvpreset['Val max'] = str(self._val_max.get())
-        self._hsvpreset['Val min'] = str(self._val_min.get())
+        self._hsvpreset[str(self._hsvcolor.get())] = []
+        self._hsvpreset[str(self._hsvcolor.get())].append({
+        'Hue max':  str(self._hue_max.get()),
+        'Hue min':  str(self._hue_min.get()),
+        'Sat max':  str(self._sat_max.get()),
+        'Sat min':  str(self._sat_min.get()),
+        'Val max':  str(self._val_max.get()),
+        'Val min':  str(self._val_min.get())})
+
+
+        # self._hsvpreset['Hue max'] = str(self._hue_max.get())
+        # self._hsvpreset['Hue min'] = str(self._hue_min.get())
+        # self._hsvpreset['Sat max'] = str(self._sat_max.get())
+        # self._hsvpreset['Sat min'] = str(self._sat_min.get())
+        # self._hsvpreset['Val max'] = str(self._val_max.get())
+        # self._hsvpreset['Val min'] = str(self._val_min.get())
         with open('hsv_presets.json', 'w') as f:
             json.dump(self._hsvpreset, f)
 
     def usehsvpreset(self):
         f = open('hsv_presets.json')
         self._hsvpreset = json.load(f)
-        self._hue_max.set(self._hsvpreset['Hue max'])
-        self._hue_min.set(self._hsvpreset['Hue min'])
-        self._sat_max.set(self._hsvpreset['Sat max'])
-        self._sat_min.set(self._hsvpreset['Sat min'])
-        self._val_max.set(self._hsvpreset['Val max'])
-        self._val_min.set(self._hsvpreset['Val min'])
+        for c in self._hsvpreset[str(self._hsvcolor.get())]:
+            self._hue_max.set(c['Hue max'])
+            self._hue_min.set(c['Hue min'])
+            self._sat_max.set(c['Sat max'])
+            self._sat_min.set(c['Sat min'])
+            self._val_max.set(c['Val max'])
+            self._val_min.set(c['Val min'])
 
     def sethsvvalues(self):
         self.hsv_low = np.array([self._hue_min.get(), self._sat_min.get(), self._val_min.get()])
@@ -207,6 +237,17 @@ class MainWindow:
         else:
             print("[INFO] Camera page is not open...")
 
+    def invertmask(self):
+        global invertedmask
+        if self.invertmaskbtn.config('relief')[-1] == 'sunken':
+            self.invertmaskbtn.config(relief="raised", text="Invert Mask")
+            print("[INFO] Inverting mask")
+            invertedmask = False
+        else:
+            self.invertmaskbtn.config(relief="sunken", text="Revert Mask")
+            invertedmask = True
+            print("[INFO] Reverting mask")
+
 
 class Camerapage:
     def __init__(self, facade):
@@ -225,9 +266,13 @@ class Camerapage:
 
     def video_loop(self):
         global applymask
+        global invertedmask
         if self.facade.getcleanvideo():
             if applymask:
-                self.current_image = self.facade.getmaskedvideo()
+                if invertedmask:
+                    self.current_image = self.facade.getmaskedvideo(inverted=True)
+                else:
+                    self.current_image = self.facade.getmaskedvideo(inverted=False)
                 imgtk = ImageTk.PhotoImage(image=self.current_image)
                 self.panel.imgtk = imgtk
                 self.panel.config(image=imgtk)
