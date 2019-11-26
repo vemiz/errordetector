@@ -35,6 +35,10 @@ class Facade:
         self.maskedframe = self._processor.get_masked_video(hsvhigh=self.hsvhigh,hsvlow=self.hsvlow, inverted=inverted)
         return self.maskedframe
 
+    def getbinaryvideo(self):
+        self.binaryframe = self._processor.getbinaryframe(hsvhigh=self.hsvhigh, hsvlow=self.hsvlow)
+        return self.binaryframe
+
     def getcleanvideo(self):
         self.cleanframe = self._processor.get_clean_video_stream()
         return self.cleanframe

@@ -10,7 +10,7 @@ Den skal ha knappar for å skifte vindu.
 import tkinter as tk
 from tkinter import ttk, filedialog
 from tkinter import *
-
+import threading
 import PIL
 import numpy as np
 from PIL import ImageTk, Image
@@ -22,7 +22,7 @@ camerapageopen = False
 imagepageopen = False
 applymask = False
 invertedmask = False
-
+binarymask = False
 
 # TODO: Sjekk om ej trenge å arve threding
 class MainApplication():
@@ -34,15 +34,6 @@ class MainApplication():
 
     def run(self):
         self.mainwindow.run()
-
-    def getfacade(self):
-        return self.facade()
-
-    def getcamera(self):
-        return self.facade.getcameraframe()
-
-    def getprocessor(self):
-        return self.facade.getprocessor()
 
 
 class MainWindow:
@@ -61,9 +52,12 @@ class MainWindow:
         ]
 
         self._hsvcolor = tk.StringVar(self.root)
+        global binarymask
 
     def run(self):
         # Buttons
+        self.binarymask = False
+
         self.startcamerabtn = Button(self.root, text="Start camera", width=14,
                                      relief="raised", fg='black', command=self.opencamerapage)
         self.quitbtn = Button(self.root, text="Quit", fg='black', command=self.quit)
@@ -79,6 +73,7 @@ class MainWindow:
         self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1], self._hsvpresets[2])
         self.prntbtn = Button(self.root, text="Print", command=self.facade.printregister)
         self.startimgpagebtn = Button(self.root, text="Start Image display", relief="raised", command=self.openimagepage)
+        self.binarybtn = Checkbutton(self.root, text="Binary Mask", variable=self.binarymask)
 
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
@@ -97,6 +92,7 @@ class MainWindow:
         self.presetmenu.grid(row=11, column=4)
         self.prntbtn.grid(row=12, column=4)
         self.startimgpagebtn.grid(row=8, column=5)
+        self.binarybtn.grid(row=9, column=5)
 
         self.folderPath = StringVar()
 
@@ -158,6 +154,7 @@ class MainWindow:
         self._val_max.set(255)
         self._val_min.set(0)
 
+
     # https://www.youtube.com/watch?v=rz1NFzMSJGY
     def savehsvpreset(self):
         self._hsvpreset[str(self._hsvcolor.get())] = []
@@ -200,6 +197,11 @@ class MainWindow:
         #if useRPi:
         self.facade.gettriggerpress()
         self.sethsvvalues()
+        global binarymas
+        if self.binarymask:
+            binarymas = True
+        else:
+            binarymas = False
         self.root.after(1, self.updater)
 
     def opencamerapage(self):
@@ -281,7 +283,6 @@ class Camerapage:
     def __init__(self, facade):
         self.root = Toplevel()
         self.facade = facade
-        self.facade.startcamera()
         self.root.title("Camera")
 
         self.panel = tk.Label(self.root)  # initialize image panel
@@ -295,12 +296,18 @@ class Camerapage:
     def video_loop(self):
         global applymask
         global invertedmask
+        global binarymask
+
         if self.facade.getcleanvideo():
             if applymask:
-                if invertedmask:
-                    self.current_image = self.facade.getmaskedvideo(inverted=True)
+                if binarymask:
+                    self.current_image = self.facade.getbinaryvideo()
                 else:
-                    self.current_image = self.facade.getmaskedvideo(inverted=False)
+                    if invertedmask:
+                        self.current_image = self.facade.getmaskedvideo(inverted=True)
+                    elif not invertedmask:
+                        self.current_image = self.facade.getmaskedvideo(inverted=False)
+
                 imgtk = ImageTk.PhotoImage(image=self.current_image)
                 self.panel.imgtk = imgtk
                 self.panel.config(image=imgtk)
@@ -310,7 +317,7 @@ class Camerapage:
                 self.panel.imgtk = imgtk
                 self.panel.config(image=imgtk)
 
-        self.root.after(10, self.video_loop)
+        self.root.after(30, self.video_loop)
 
     def destructor(self):
         """ Destroy the root object and release all resources """
@@ -320,8 +327,9 @@ class Camerapage:
         camerapageopen = False
 
 
-class Imagepage:
+class Imagepage(threading.Thread):
     def __init__(self, facade):
+        threading.Thread.__init__(self)
         self.root = Toplevel()
         self.facade = facade
         self.root.title("Image Page")
@@ -332,17 +340,17 @@ class Imagepage:
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)
         self.current_image = None
 
-        self.image_loop()
+        self.daemon = True
+        self.start()
 
-    def image_loop(self):
+    def run(self):
 
         self.current_image = self.facade.getlastimage()
-        PIL.Image.fromarray
         imgtk = ImageTk.PhotoImage(image=PIL.Image.fromarray(self.current_image))
         self.panel.imgtk = imgtk
         self.panel.config(image=imgtk)
 
-        self.root.after(100, self.image_loop)
+        self.root.after(1000, self.run)
 
     def destructor(self):
         """ Destroy the root object and release all resources """

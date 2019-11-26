@@ -1,13 +1,15 @@
 import cv2
 import numpy as np
 from PIL import ImageTk, Image
+import threading
 
-from camera import Camera
 
-
-class Processor:
+class Processor(threading.Thread):
     def __init__(self, facade):
+        threading.Thread.__init__(self)
         self.facade = facade
+        self.daemon = True
+        self.start()
 
     def get_clean_video_stream(self):
         frame = self.facade.getcameraframe()
@@ -18,13 +20,13 @@ class Processor:
             return self.current_image
 
     def get_masked_video(self, hsvlow, hsvhigh, inverted=False):
-        self.hsv_low = hsvlow
-        self.hsv_high = hsvhigh
+        hsv_low = hsvlow
+        hsv_high = hsvhigh
         frame = self.facade.getcameraframe()
-        if self.hsv_low is not None:
+        if hsv_low is not None:
             hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             rgbimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)
+            mask = cv2.inRange(hsvimage, hsv_low, hsv_high)
             if inverted:
                 mask = cv2.bitwise_not(mask)
 
@@ -34,10 +36,12 @@ class Processor:
         else:
             print("[INFO] Missing HSV mask!")
 
-    def getbinaryframe(self):
+    def getbinaryframe(self, hsvlow, hsvhigh):
+        hsv_low = hsvlow
+        hsv_high = hsvhigh
         frame = self.facade.getcameraframe()
         hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)
+        mask = cv2.inRange(hsvimage, hsv_low, hsv_high)
         return mask
 
     # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
