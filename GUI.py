@@ -17,9 +17,10 @@ from PIL import ImageTk, Image
 from facade import Facade
 import json
 
-useRPi = True
+useRPi = False
 camerapageopen = False
 imagepageopen = False
+secondimagepageopen = False
 applymask = False
 invertedmask = False
 binarymask = False
@@ -44,6 +45,7 @@ class MainWindow:
         self.root.geometry("800x400")
         self.root.title("3D print error detection")
         self.label1 = Label(self.root, text="Error detection", fg='black')
+        self.root.protocol('WM_DELETE_WINDOW', self.quit)
         self._hsvpreset = {}
         self._hsvpresets = [
             "Color1",
@@ -72,7 +74,8 @@ class MainWindow:
         self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
         self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1], self._hsvpresets[2])
         self.prntbtn = Button(self.root, text="Print", command=self.facade.printregister)
-        self.startimgpagebtn = Button(self.root, text="Start Image display", relief="raised", command=self.openimagepage)
+        self.startlastimgpagebtn = Button(self.root, text="Start Last Image", relief="raised", command=self.openimagepage)
+        self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised", command=self.opensecondimagepage)
         self.binarybtn = Checkbutton(self.root, text="Binary Mask", variable=self.binarymask)
 
         self._hsvcolor.set(self._hsvpresets[0])
@@ -91,7 +94,8 @@ class MainWindow:
         self.usehsvpresetbtn.grid(row=10, column=4)
         self.presetmenu.grid(row=11, column=4)
         self.prntbtn.grid(row=12, column=4)
-        self.startimgpagebtn.grid(row=8, column=5)
+        self.startlastimgpagebtn.grid(row=8, column=5)
+        self.startsecondlastimgpagebtn.grid(row=8, column=6)
         self.binarybtn.grid(row=9, column=5)
 
         self.folderPath = StringVar()
@@ -219,19 +223,37 @@ class MainWindow:
 
     def openimagepage(self):
         global imagepageopen
-        if self.startimgpagebtn.config('relief')[-1] == 'sunken':
-            self.startimgpagebtn.config(relief="raised", text="Start Image display")
+        if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
+            self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
         else:
-            self.startimgpagebtn.config(relief="sunken", text="Stop Image display")
+            self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
 
         if not imagepageopen:
             if not self.facade.isregempty():
-                self.imagepageopen = Imagepage(facade=self.facade)
+                self.imagepageopen = Imagepage(facade=self.facade, reversedindex=-1)
                 imagepageopen = True
             else:
                 print("Image register is empty!!")
         else:
             self.stopimagepage()
+
+
+    def opensecondimagepage(self):
+        global secondimagepageopen
+        if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
+            self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
+        else:
+            self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
+
+        if not secondimagepageopen:
+            if not self.facade.isregempty():
+                self.imagepageopen = Imagepage(facade=self.facade, reversedindex=-2)
+                secondimagepageopen = True
+            else:
+                print("Image register is empty!!")
+        else:
+            self.stopimagepage()
+
 
     def stopcamerapage(self):
         self.camerapage.destructor()
@@ -279,21 +301,28 @@ class MainWindow:
             print("[INFO] Reverting mask")
 
 
-class Camerapage:
+class Camerapage():  # threading.Thread):
     def __init__(self, facade):
+        # threading.Thread.__init__(self)
         self.root = Toplevel()
         self.facade = facade
         self.root.title("Camera")
-
+        self.root.lift()
+        self.root.focus_force()
+        self.root.grab_set()
+        self.root.grab_release()
         self.panel = tk.Label(self.root)  # initialize image panel
         self.panel.pack(padx=10, pady=10)
 
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)
         self.current_image = None
         print("[INFO] starting camera...")
-        self.video_loop()
 
-    def video_loop(self):
+        self.run()
+        #self.daemon = True
+        #self.start()
+
+    def run(self):
         global applymask
         global invertedmask
         global binarymask
@@ -317,7 +346,7 @@ class Camerapage:
                 self.panel.imgtk = imgtk
                 self.panel.config(image=imgtk)
 
-        self.root.after(30, self.video_loop)
+        self.root.after(30, self.run)
 
     def destructor(self):
         """ Destroy the root object and release all resources """
@@ -327,12 +356,18 @@ class Camerapage:
         camerapageopen = False
 
 
-class Imagepage(threading.Thread):
-    def __init__(self, facade):
-        threading.Thread.__init__(self)
+class Imagepage():  # threading.Thread):
+    def __init__(self, facade, reversedindex=-1):
+        #threading.Thread.__init__(self)
         self.root = Toplevel()
         self.facade = facade
-        self.root.title("Image Page")
+        self.reversedindex = reversedindex
+        if reversedindex == -1:
+            self.root.title("Last Image Captured")
+        elif reversedindex == -2:
+            self.root.title("Second to Last Image Captured")
+        else:
+            self.root.title("Un indexed Image")
 
         self.panel = tk.Label(self.root)  # initialize image panel
         self.panel.pack(padx=10, pady=10)
@@ -340,12 +375,13 @@ class Imagepage(threading.Thread):
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)
         self.current_image = None
 
-        self.daemon = True
-        self.start()
+        self.run()
+        #self.daemon = True
+        #self.start()
 
     def run(self):
 
-        self.current_image = self.facade.getlastimage()
+        self.current_image = self.facade.getlastimage(self.reversedindex)
         imgtk = ImageTk.PhotoImage(image=PIL.Image.fromarray(self.current_image))
         self.panel.imgtk = imgtk
         self.panel.config(image=imgtk)

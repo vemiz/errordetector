@@ -8,6 +8,9 @@ class Processor(threading.Thread):
     def __init__(self, facade):
         threading.Thread.__init__(self)
         self.facade = facade
+        self.hsv_low = None
+        self.hsv_high = None
+        self.kernal = np.ones((5,5), np.uint8)
         self.daemon = True
         self.start()
 
@@ -19,14 +22,12 @@ class Processor(threading.Thread):
             self.current_image = Image.fromarray(image)
             return self.current_image
 
-    def get_masked_video(self, hsvlow, hsvhigh, inverted=False):
-        hsv_low = hsvlow
-        hsv_high = hsvhigh
+    def get_masked_video(self, inverted=False):
         frame = self.facade.getcameraframe()
-        if hsv_low is not None:
+        if self.hsv_low is not None:
             hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             rgbimage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mask = cv2.inRange(hsvimage, hsv_low, hsv_high)
+            mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)
             if inverted:
                 mask = cv2.bitwise_not(mask)
 
@@ -36,12 +37,10 @@ class Processor(threading.Thread):
         else:
             print("[INFO] Missing HSV mask!")
 
-    def getbinaryframe(self, hsvlow, hsvhigh):
-        hsv_low = hsvlow
-        hsv_high = hsvhigh
+    def getbinaryframe(self):
         frame = self.facade.getcameraframe()
         hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsvimage, hsv_low, hsv_high)
+        mask = cv2.inRange(hsvimage, self.hsv_low, self.hsv_high)
         return mask
 
     # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
@@ -51,3 +50,32 @@ class Processor(threading.Thread):
         diffimg = cv2.subtract(image1, image2)
         diff = np.count_nonzero(diffimg)
         return diff
+
+    def updatehsv(self, hsvlow, hsvhigh):
+        self.hsv_low = hsvlow
+        self.hsv_high = hsvhigh
+
+    def erodemask(self, mask):
+        eroded = cv2.erode(mask, self.kernal, iterations=1)
+        return eroded
+
+    def dilatemask(self, mask):
+        dilated = cv2.dilate(mask, self.kernal, iterations=1)
+        return dilated
+
+    def openmask(self, mask):
+        opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, self.kernal)
+        return opened
+
+    def closemask(self, mask):
+        closed = cv2.morphologyEx(mask, cv2.MORPH_Close, self.kernal)
+        return closed
+
+    def getcontours(self, mask):
+        _, contours = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        return contours
+
+    def getcontoursarea(self, mask):
+        contours = self.getcontours(mask)
+        area = cv2.contourArea(contours)
+        return area

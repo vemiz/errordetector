@@ -32,11 +32,13 @@ class Facade:
         self.hsvlow = value
 
     def getmaskedvideo(self, inverted):
-        self.maskedframe = self._processor.get_masked_video(hsvhigh=self.hsvhigh,hsvlow=self.hsvlow, inverted=inverted)
+        self._processor.updatehsv(hsvlow=self.hsvlow, hsvhigh=self.hsvhigh)
+        self.maskedframe = self._processor.get_masked_video(inverted=inverted)
         return self.maskedframe
 
     def getbinaryvideo(self):
-        self.binaryframe = self._processor.getbinaryframe(hsvhigh=self.hsvhigh, hsvlow=self.hsvlow)
+        self._processor.updatehsv(hsvlow=self.hsvlow, hsvhigh=self.hsvhigh)
+        self.binaryframe = self._processor.getbinaryframe()
         return self.binaryframe
 
     def getcleanvideo(self):
@@ -60,13 +62,13 @@ class Facade:
 
     # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
     def comparelastimages(self):
-        currentframe = self._imageregister.getcurrentframe()
+        currentframe = self._imageregister.getframe()
         lastframe = self._imageregister.getlastframe()
         diff = self._processor.get_image_diff(currentframe, lastframe)
         print(diff)
 
-    def getlastimage(self):
-        return self._imageregister.getcurrentframe()
+    def getlastimage(self, index):
+        return self._imageregister.getframe(index)
 
     def printregister(self):
         self._imageregister.printlist()

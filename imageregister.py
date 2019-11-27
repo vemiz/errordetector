@@ -16,10 +16,12 @@ class Imageregister:
         img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         self._imglist.append(img)
 
-    def getcurrentframe(self):
-        self._currentframe = self._imglist[-1]
+    def getframe(self, index):
+        self.index = index
+        self._currentframe = self._imglist[self.index]
         return self._currentframe
 
+    # Mabye not necessary with indexing in method over
     def getlastframe(self):
         self._lastframe = self._imglist[-2]
         return self._lastframe
