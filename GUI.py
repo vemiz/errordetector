@@ -17,35 +17,18 @@ from PIL import ImageTk, Image
 from facade import Facade
 import json
 
-useRPi = False
+
 camerapageopen = False
 imagepageopen = False
 secondimagepageopen = False
-applymask = False
-invertedmask = False
-binarymask = False
-
-# TODO: Sjekk om ej trenge å arve threding
-class MainApplication():
-
-    def __init__(self):
-        self.facade = Facade(useRPi)
-        self.root = Tk()
-        self.mainwindow = MainWindow(self.root, facade=self.facade)
-
-    def run(self):
-        self.mainwindow.run()
 
 
-class MainWindow:
+class MainWindow(threading.Thread):
 
-    def __init__(self, root, facade):
+    def __init__(self, facade):
+        threading.Thread.__init__(self)
         self.facade = facade
-        self.root = root
-        self.root.geometry("800x400")
-        self.root.title("3D print error detection")
-        self.label1 = Label(self.root, text="Error detection", fg='black')
-        self.root.protocol('WM_DELETE_WINDOW', self.quit)
+
         self._hsvpreset = {}
         self._hsvpresets = [
             "Color1",
@@ -53,12 +36,16 @@ class MainWindow:
             "Color3",
         ]
 
-        self._hsvcolor = tk.StringVar(self.root)
-        global binarymask
-
     def run(self):
+
+        self.root = Tk()
+        self.root.geometry("800x400")
+        self.root.title("3D print error detection")
+        self.label1 = Label(self.root, text="Error detection", fg='black')
+        self.root.protocol('WM_DELETE_WINDOW', self.quit)
         # Buttons
-        self.binarymask = False
+        self._hsvcolor = tk.StringVar(self.root)
+
 
         self.startcamerabtn = Button(self.root, text="Start camera", width=14,
                                      relief="raised", fg='black', command=self.opencamerapage)
@@ -68,15 +55,18 @@ class MainWindow:
         self.addmaskbtn = Button(self.root, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
         self.invertmaskbtn = Button(self.root, text="Invert Mask", width=14, relief="raised", fg='black',
-                                 command=self.invertmask)
+                                    command=self.invertmask)
         self.hsvresetbtn = Button(self.root, text="Reset HSV", fg='black', command=self.hsvreset)
         self.hsvpresetbtn = Button(self.root, text="Save HSV Preset", fg='black', command=self.savehsvpreset)
         self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
-        self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1], self._hsvpresets[2])
+        self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1],
+                                     self._hsvpresets[2])
         self.prntbtn = Button(self.root, text="Print", command=self.facade.printregister)
-        self.startlastimgpagebtn = Button(self.root, text="Start Last Image", relief="raised", command=self.openimagepage)
-        self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised", command=self.opensecondimagepage)
-        self.binarybtn = Checkbutton(self.root, text="Binary Mask", variable=self.binarymask)
+        self.startlastimgpagebtn = Button(self.root, text="Start Last Image", relief="raised",
+                                          command=self.openimagepage)
+        self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised",
+                                                command=self.opensecondimagepage)
+        self.binarybtn = Button(self.root, text="Binary Mask", relief="raised", fg='black', command=self.invertmask)
 
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
@@ -144,8 +134,14 @@ class MainWindow:
         self.val_min_scale.grid(row=12, column=3)
 
         # Start it all
-        self.updater()
+        #self.updater()
+        #self.root.after(30, self.updater)
         self.root.mainloop()
+
+    def updater(self):
+        self.facade.gettriggerpress()
+        self.sethsvvalues()
+        #self.root.after(30, self.updater())
 
     def setpreset(self, *args):
         self.usehsvpreset()
@@ -158,25 +154,17 @@ class MainWindow:
         self._val_max.set(255)
         self._val_min.set(0)
 
-
     # https://www.youtube.com/watch?v=rz1NFzMSJGY
     def savehsvpreset(self):
         self._hsvpreset[str(self._hsvcolor.get())] = []
         self._hsvpreset[str(self._hsvcolor.get())].append({
-        'Hue max':  str(self._hue_max.get()),
-        'Hue min':  str(self._hue_min.get()),
-        'Sat max':  str(self._sat_max.get()),
-        'Sat min':  str(self._sat_min.get()),
-        'Val max':  str(self._val_max.get()),
-        'Val min':  str(self._val_min.get())})
+            'Hue max': str(self._hue_max.get()),
+            'Hue min': str(self._hue_min.get()),
+            'Sat max': str(self._sat_max.get()),
+            'Sat min': str(self._sat_min.get()),
+            'Val max': str(self._val_max.get()),
+            'Val min': str(self._val_min.get())})
 
-
-        # self._hsvpreset['Hue max'] = str(self._hue_max.get())
-        # self._hsvpreset['Hue min'] = str(self._hue_min.get())
-        # self._hsvpreset['Sat max'] = str(self._sat_max.get())
-        # self._hsvpreset['Sat min'] = str(self._sat_min.get())
-        # self._hsvpreset['Val max'] = str(self._val_max.get())
-        # self._hsvpreset['Val min'] = str(self._val_min.get())
         with open('hsv_presets.json', 'w') as f:
             json.dump(self._hsvpreset, f)
 
@@ -197,17 +185,6 @@ class MainWindow:
         self.facade.sethsvlow(value=self.hsv_low)
         self.facade.sethsvhigh(value=self.hsv_high)
 
-    def updater(self):
-        #if useRPi:
-        self.facade.gettriggerpress()
-        self.sethsvvalues()
-        global binarymas
-        if self.binarymask:
-            binarymas = True
-        else:
-            binarymas = False
-        self.root.after(1, self.updater)
-
     def opencamerapage(self):
         global camerapageopen
         if self.startcamerabtn.config('relief')[-1] == 'sunken':
@@ -216,7 +193,7 @@ class MainWindow:
             self.startcamerabtn.config(relief="sunken", text="Stop Camera")
 
         if not camerapageopen:
-            self.camerapage = Camerapage(facade=self.facade)
+            self.camerapage = Camerapage(facade=self.facade, parent=self)
             camerapageopen = True
         else:
             self.stopcamerapage()
@@ -237,7 +214,6 @@ class MainWindow:
         else:
             self.stopimagepage()
 
-
     def opensecondimagepage(self):
         global secondimagepageopen
         if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
@@ -253,7 +229,6 @@ class MainWindow:
                 print("Image register is empty!!")
         else:
             self.stopimagepage()
-
 
     def stopcamerapage(self):
         self.camerapage.destructor()
@@ -277,35 +252,37 @@ class MainWindow:
 
     def addmask(self):
         if camerapageopen:
-            global applymask
             if self.addmaskbtn.config('relief')[-1] == 'sunken':
                 self.addmaskbtn.config(relief="raised", text="Add Mask")
                 print("[INFO] Removing mask")
-                applymask = False
+                self.facade.setapplymask(flag=False)
             else:
                 self.addmaskbtn.config(relief="sunken", text="Remove Mask")
-                applymask = True
+                self.facade.setapplymask(flag=True)
                 print("[INFO] Adding mask")
         else:
             print("[INFO] Camera page is not open...")
 
     def invertmask(self):
-        global invertedmask
-        if self.invertmaskbtn.config('relief')[-1] == 'sunken':
-            self.invertmaskbtn.config(relief="raised", text="Invert Mask")
-            print("[INFO] Inverting mask")
-            invertedmask = False
+        if self.facade.getapplymask():
+            if self.invertmaskbtn.config('relief')[-1] == 'sunken':
+                self.invertmaskbtn.config(relief="raised", text="Invert Mask")
+                print("[INFO] Reverting mask")
+                self.facade.setinvertedmask(flag=False)
+            else:
+                self.invertmaskbtn.config(relief="sunken", text="Revert Mask")
+                self.facade.setinvertedmask(flag=True)
+                print("[INFO] Inverting mask")
         else:
-            self.invertmaskbtn.config(relief="sunken", text="Revert Mask")
-            invertedmask = True
-            print("[INFO] Reverting mask")
+            print("Mask not applied...")
 
 
 class Camerapage():  # threading.Thread):
-    def __init__(self, facade):
+    def __init__(self, facade, parent):
         # threading.Thread.__init__(self)
         self.root = Toplevel()
         self.facade = facade
+        self.parent = parent
         self.root.title("Camera")
         self.root.lift()
         self.root.focus_force()
@@ -319,32 +296,26 @@ class Camerapage():  # threading.Thread):
         print("[INFO] starting camera...")
 
         self.run()
-        #self.daemon = True
-        #self.start()
 
     def run(self):
-        global applymask
-        global invertedmask
-        global binarymask
-
-        if self.facade.getcleanvideo():
-            if applymask:
-                if binarymask:
-                    self.current_image = self.facade.getbinaryvideo()
-                else:
-                    if invertedmask:
-                        self.current_image = self.facade.getmaskedvideo(inverted=True)
-                    elif not invertedmask:
-                        self.current_image = self.facade.getmaskedvideo(inverted=False)
-
-                imgtk = ImageTk.PhotoImage(image=self.current_image)
-                self.panel.imgtk = imgtk
-                self.panel.config(image=imgtk)
+        self.parent.updater()
+        if self.facade.getapplymask():
+            if self.facade.getbinarymask():
+                self.current_image = self.facade.getbinaryvideo()
             else:
-                self.current_image = self.facade.getcleanvideo()
-                imgtk = ImageTk.PhotoImage(image=self.current_image)
-                self.panel.imgtk = imgtk
-                self.panel.config(image=imgtk)
+                if self.facade.getinvertedmask():
+                    self.current_image = self.facade.getmaskedvideo(inverted=True)
+                elif not self.facade.getinvertedmask():
+                    self.current_image = self.facade.getmaskedvideo(inverted=False)
+
+            imgtk = ImageTk.PhotoImage(image=self.current_image)
+            self.panel.imgtk = imgtk
+            self.panel.config(image=imgtk)
+        else:
+            self.current_image = self.facade.getcleanvideo()
+            imgtk = ImageTk.PhotoImage(image=self.current_image)
+            self.panel.imgtk = imgtk
+            self.panel.config(image=imgtk)
 
         self.root.after(30, self.run)
 
@@ -357,8 +328,8 @@ class Camerapage():  # threading.Thread):
 
 
 class Imagepage():  # threading.Thread):
-    def __init__(self, facade, reversedindex=-1):
-        #threading.Thread.__init__(self)
+    def __init__(self, facade, reversedindex):
+        # threading.Thread.__init__(self)
         self.root = Toplevel()
         self.facade = facade
         self.reversedindex = reversedindex
@@ -376,12 +347,12 @@ class Imagepage():  # threading.Thread):
         self.current_image = None
 
         self.run()
-        #self.daemon = True
-        #self.start()
+        # self.daemon = True
+        # self.start()
 
     def run(self):
 
-        self.current_image = self.facade.getlastimage(self.reversedindex)
+        self.current_image = self.facade.getlastimage(index=self.reversedindex)
         imgtk = ImageTk.PhotoImage(image=PIL.Image.fromarray(self.current_image))
         self.panel.imgtk = imgtk
         self.panel.config(image=imgtk)

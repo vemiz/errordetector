@@ -7,14 +7,41 @@ from imageprocessor import Processor
 from tkinter import *
 from imageregister import Imageregister
 from trigger import Trigger
+import threading
 
-class Facade:
+
+class Facade(threading.Thread):
     def __init__(self, useRPi):
+        threading.Thread.__init__(self)
         self._useRPi = useRPi
         self._camera = Camera(self._useRPi)
         self._processor = Processor(self)
         self._trigger = Trigger(self._useRPi)
         self._imageregister = Imageregister()
+        self._applymask = False
+        self._invertedmask = False
+        self._binarymask = False
+
+    def run(self):
+        self.gettriggerpress()
+
+    def setapplymask(self, flag):
+        self._applymask = flag
+
+    def getapplymask(self):
+        return self._applymask
+
+    def setinvertedmask(self, flag):
+        self._invertedmask = flag
+
+    def getinvertedmask(self):
+        return self._invertedmask
+
+    def setbinarymask(self, flag):
+        self._binarymask = flag
+
+    def getbinarymask(self):
+        return self._binarymask
 
     def startcamera(self):
         self._camera.start()
@@ -68,12 +95,10 @@ class Facade:
         print(diff)
 
     def getlastimage(self, index):
-        return self._imageregister.getframe(index)
+        return self._imageregister.getframe(index=index)
 
     def printregister(self):
         self._imageregister.printlist()
 
     def isregempty(self):
         return self._imageregister.isempty()
-
-

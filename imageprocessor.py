@@ -10,7 +10,7 @@ class Processor(threading.Thread):
         self.facade = facade
         self.hsv_low = None
         self.hsv_high = None
-        self.kernal = np.ones((5,5), np.uint8)
+        self.kernal = np.ones((5, 5), np.uint8)
         self.daemon = True
         self.start()
 
