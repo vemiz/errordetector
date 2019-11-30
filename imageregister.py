@@ -13,7 +13,7 @@ class Imageregister:
             False
 
     def addimg(self, image):
-        img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        img = image
         self._imglist.append(img)
 
     def getframe(self, index):

@@ -2,6 +2,8 @@
 Facaden skal koble GUIen til ei rekke av klasser for å beholde lesbarheit og struktur i programmet.
 Denne makerer meir komplekse underliggende strukturer, og gjer at ein får enkapsling. Altså eit interface for subsystem.
 """
+import cv2
+
 from camera import Camera
 from imageprocessor import Processor
 from tkinter import *
@@ -21,6 +23,7 @@ class Facade(threading.Thread):
         self._applymask = False
         self._invertedmask = False
         self._binarymask = False
+        self.savemaskedon = False
 
     def run(self):
         self.gettriggerpress()
@@ -58,7 +61,7 @@ class Facade(threading.Thread):
     def sethsvlow(self, value):
         self.hsvlow = value
 
-    def getmaskedvideo(self, inverted):
+    def getmaskedframe(self, inverted):
         self._processor.updatehsv(hsvlow=self.hsvlow, hsvhigh=self.hsvhigh)
         self.maskedframe = self._processor.get_masked_video(inverted=inverted)
         return self.maskedframe
@@ -68,7 +71,7 @@ class Facade(threading.Thread):
         self.binaryframe = self._processor.getbinaryframe()
         return self.binaryframe
 
-    def getcleanvideo(self):
+    def getcleanframe(self):
         self.cleanframe = self._processor.get_clean_video_stream()
         return self.cleanframe
 
@@ -76,7 +79,10 @@ class Facade(threading.Thread):
         self._camera.terminate()
 
     def onbuttonpress(self):
-        frame = self.getcameraframe()
+        if self.savemaskedon:
+            frame = self.getmaskedframe(False)
+        else:
+            frame = self.getcleanframe()
         self._imageregister.addimg(frame)
         print("[INFO] The button was pressed")
 
@@ -95,10 +101,16 @@ class Facade(threading.Thread):
         print(diff)
 
     def getlastimage(self, index):
-        return self._imageregister.getframe(index=index)
+        frame = self._imageregister.getframe(index=index)
+        #image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        return frame
 
     def printregister(self):
         self._imageregister.printlist()
 
     def isregempty(self):
         return self._imageregister.isempty()
+
+    def setsavemasked(self, flag):
+        self.savemaskedon = flag
+

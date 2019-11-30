@@ -18,11 +18,6 @@ from facade import Facade
 import json
 
 
-camerapageopen = False
-imagepageopen = False
-secondimagepageopen = False
-
-
 class MainWindow(threading.Thread):
 
     def __init__(self, facade):
@@ -35,6 +30,14 @@ class MainWindow(threading.Thread):
             "Color2",
             "Color3",
         ]
+
+        self.camerapage = None
+        self.imagepage = None
+        self.secondimagepage = None
+        self.camerapageopen = False
+        self.imagepageopen = False
+        self.secondimagepageopen = False
+        self.savemaskedon = False
 
     def run(self):
 
@@ -66,7 +69,7 @@ class MainWindow(threading.Thread):
                                           command=self.openimagepage)
         self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised",
                                                 command=self.opensecondimagepage)
-        self.binarybtn = Button(self.root, text="Binary Mask", relief="raised", fg='black', command=self.invertmask)
+        self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black', command=self.savemasked)
 
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
@@ -86,7 +89,7 @@ class MainWindow(threading.Thread):
         self.prntbtn.grid(row=12, column=4)
         self.startlastimgpagebtn.grid(row=8, column=5)
         self.startsecondlastimgpagebtn.grid(row=8, column=6)
-        self.binarybtn.grid(row=9, column=5)
+        self.savemaskedbtn.grid(row=9, column=5)
 
         self.folderPath = StringVar()
 
@@ -143,6 +146,15 @@ class MainWindow(threading.Thread):
         self.sethsvvalues()
         #self.root.after(30, self.updater())
 
+    def getcamerapageopen(self):
+        return self.camerapageopen
+
+    def getimagepageopen(self):
+        return self.imagepageopen
+
+    def getsecondimagepageopen(self):
+        return self.secondimagepageopen
+
     def setpreset(self, *args):
         self.usehsvpreset()
 
@@ -186,55 +198,60 @@ class MainWindow(threading.Thread):
         self.facade.sethsvhigh(value=self.hsv_high)
 
     def opencamerapage(self):
-        global camerapageopen
-        if self.startcamerabtn.config('relief')[-1] == 'sunken':
-            self.startcamerabtn.config(relief="raised", text="Start Camera")
-        else:
-            self.startcamerabtn.config(relief="sunken", text="Stop Camera")
-
-        if not camerapageopen:
+        if not self.camerapageopen:
             self.camerapage = Camerapage(facade=self.facade, parent=self)
-            camerapageopen = True
+            self.camerapageopen = True
         else:
             self.stopcamerapage()
+            self.camerapageopen = False
+
+        if self.startcamerabtn.config('relief')[-1] == 'sunken':
+            self.startcamerabtn.config(relief="raised", text="Start Camera")
+        elif self.camerapageopen:
+            self.startcamerabtn.config(relief="sunken", text="Stop Camera")
 
     def openimagepage(self):
-        global imagepageopen
-        if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
-            self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
-        else:
-            self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
 
-        if not imagepageopen:
+        if not self.imagepageopen:
             if not self.facade.isregempty():
-                self.imagepageopen = Imagepage(facade=self.facade, reversedindex=-1)
-                imagepageopen = True
+                self.imagepage = Imagepage(facade=self.facade, reversedindex=-1)
+                self.imagepageopen = True
             else:
                 print("Image register is empty!!")
         else:
             self.stopimagepage()
+            self.imagepageopen = False
+
+        if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
+            self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
+        elif self.imagepageopen:
+            self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
 
     def opensecondimagepage(self):
-        global secondimagepageopen
-        if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
-            self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
-        else:
-            self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
 
-        if not secondimagepageopen:
+        if not self.secondimagepageopen:
             if not self.facade.isregempty():
-                self.imagepageopen = Imagepage(facade=self.facade, reversedindex=-2)
-                secondimagepageopen = True
+                self.secondimagepage = Imagepage(facade=self.facade, reversedindex=-2)
+                self.secondimagepageopen = True
             else:
                 print("Image register is empty!!")
         else:
-            self.stopimagepage()
+            self.stopsecondimagepage()
+            self.secondimagepageopen = False
+
+        if self.startsecondlastimgpagebtn.config('relief')[-1] == 'sunken':
+            self.startsecondlastimgpagebtn.config(relief="raised", text="Start Second Image display")
+        elif self.secondimagepageopen:
+            self.startsecondlastimgpagebtn.config(relief="sunken", text="Stop Second Image display")
 
     def stopcamerapage(self):
         self.camerapage.destructor()
 
     def stopimagepage(self):
-        self.imagepageopen.destructor()
+        self.imagepage.destructor()
+
+    def stopsecondimagepage(self):
+        self.secondimagepage.destructor()
 
     def getcamerapage(self):
         return self.camerapage
@@ -251,7 +268,7 @@ class MainWindow(threading.Thread):
         pass
 
     def addmask(self):
-        if camerapageopen:
+        if self.camerapageopen:
             if self.addmaskbtn.config('relief')[-1] == 'sunken':
                 self.addmaskbtn.config(relief="raised", text="Add Mask")
                 print("[INFO] Removing mask")
@@ -275,6 +292,20 @@ class MainWindow(threading.Thread):
                 print("[INFO] Inverting mask")
         else:
             print("Mask not applied...")
+
+    def savemasked(self):
+        if self.savemaskedbtn.config('relief')[-1] == 'sunken':
+            self.savemaskedbtn.config(relief="raised", text="Save Masked Images")
+            self.savemaskedon = False
+        else:
+            self.savemaskedbtn.config(relief="sunken", text="Save Unmasked Images")
+            self.savemaskedon = True
+
+        if self.savemaskedon:
+            self.facade.setsavemasked(True)
+        else:
+            self.facade.setsavemasked(False)
+
 
 
 class Camerapage():  # threading.Thread):
@@ -304,15 +335,15 @@ class Camerapage():  # threading.Thread):
                 self.current_image = self.facade.getbinaryvideo()
             else:
                 if self.facade.getinvertedmask():
-                    self.current_image = self.facade.getmaskedvideo(inverted=True)
+                    self.current_image = self.facade.getmaskedframe(inverted=True)
                 elif not self.facade.getinvertedmask():
-                    self.current_image = self.facade.getmaskedvideo(inverted=False)
+                    self.current_image = self.facade.getmaskedframe(inverted=False)
 
             imgtk = ImageTk.PhotoImage(image=self.current_image)
             self.panel.imgtk = imgtk
             self.panel.config(image=imgtk)
         else:
-            self.current_image = self.facade.getcleanvideo()
+            self.current_image = self.facade.getcleanframe()
             imgtk = ImageTk.PhotoImage(image=self.current_image)
             self.panel.imgtk = imgtk
             self.panel.config(image=imgtk)
@@ -353,7 +384,7 @@ class Imagepage():  # threading.Thread):
     def run(self):
 
         self.current_image = self.facade.getlastimage(index=self.reversedindex)
-        imgtk = ImageTk.PhotoImage(image=PIL.Image.fromarray(self.current_image))
+        imgtk = ImageTk.PhotoImage(self.current_image)
         self.panel.imgtk = imgtk
         self.panel.config(image=imgtk)
 

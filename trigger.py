@@ -5,7 +5,7 @@ Used to trigger camera on physical button press
 
 import threading
 from time import sleep
-
+import keyboard
 
 class Trigger(threading.Thread):
     def __init__(self, useRPi):
