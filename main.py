@@ -12,7 +12,7 @@ from GUI import MainWindow
 from facade import Facade
 
 
-useRPi = False
+useRPi = True
 facade = Facade(useRPi=useRPi)
 GUIApplication = MainWindow(facade=facade)
 GUIApplication.start()

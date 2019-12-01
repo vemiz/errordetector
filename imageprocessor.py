@@ -47,9 +47,19 @@ class Processor(threading.Thread):
     def get_image_diff(self, img1, img2):
         image1 = img1
         image2 = img2
-        diffimg = cv2.subtract(image1, image2)
-        diff = np.count_nonzero(diffimg)
+        #diffimg = cv2.subtract(image1, image2)
+        image1hist = cv2.calcHist([image1], [0], None, [256], [0, 256])
+        image2hist = cv2.calcHist([image2], [0], None, [256], [0, 256])
+        diffimg = cv2.matchTemplate(image1hist, image2hist, cv2.TM_CCOEFF_NORMED)[0][0]
+        diff = 1 - diffimg
+        #diff = np.count_nonzero(diffimg)
         return diff
+
+    def chechsimilarity(self, img1, img2):
+        image1 = np.array(img1)
+        image2 = np.array(img2)
+        similarity = self.get_image_diff(image1, image2)
+        return similarity
 
     def updatehsv(self, hsvlow, hsvhigh):
         self.hsv_low = hsvlow

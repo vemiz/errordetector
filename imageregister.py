@@ -30,3 +30,6 @@ class Imageregister:
     def printlist(self):
         print(len(self._imglist))
         # cv2.imshow('Current Image', self._imglist[-1])
+
+    def getlength(self):
+        return len(self._imglist)

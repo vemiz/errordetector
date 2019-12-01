@@ -8,7 +8,7 @@ import cv2
 
 class Camera:
     def __init__(self, useRPi):
-        self.videosrc = 0
+        self.videosrc = 1
         self.resolution = (640, 480)  # (3280, 2464) (1088, 720) (640, 480) (1280, 720)
         self.framerate = 30
         self.usepicamera = useRPi

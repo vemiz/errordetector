@@ -70,7 +70,7 @@ class MainWindow(threading.Thread):
         self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised",
                                                 command=self.opensecondimagepage)
         self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black', command=self.savemasked)
-
+        self.chechsimilaritybtn = Button(self.root, text="Similarity", fg='black', command=self.chechsimilarity)
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
 
@@ -90,6 +90,7 @@ class MainWindow(threading.Thread):
         self.startlastimgpagebtn.grid(row=8, column=5)
         self.startsecondlastimgpagebtn.grid(row=8, column=6)
         self.savemaskedbtn.grid(row=9, column=5)
+        self.chechsimilaritybtn.grid(row=10, column=5)
 
         self.folderPath = StringVar()
 
@@ -145,6 +146,9 @@ class MainWindow(threading.Thread):
         self.facade.gettriggerpress()
         self.sethsvvalues()
         #self.root.after(30, self.updater())
+
+    def chechsimilarity(self):
+        self.facade.chechsimilarity()
 
     def getcamerapageopen(self):
         return self.camerapageopen

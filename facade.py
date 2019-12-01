@@ -28,6 +28,12 @@ class Facade(threading.Thread):
     def run(self):
         self.gettriggerpress()
 
+    def chechsimilarity(self):
+        image1 = self.getlastimage(index=-1)
+        image2 = self.getlastimage(index=-2)
+        similarity = self._processor.chechsimilarity(image1, image2)
+        print("Similarity = " + str(round(similarity, 5)))
+
     def setapplymask(self, flag):
         self._applymask = flag
 
@@ -85,6 +91,8 @@ class Facade(threading.Thread):
             frame = self.getcleanframe()
         self._imageregister.addimg(frame)
         print("[INFO] The button was pressed")
+        if self._imageregister.getlength() > 1:
+            self.chechsimilarity()
 
     def gettriggerpress(self):
         if True:
