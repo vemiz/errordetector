@@ -28,11 +28,26 @@ class Facade(threading.Thread):
     def run(self):
         self.gettriggerpress()
 
+    def erode(self, flag):
+        self._processor.seterode(flag)
+
+    def dilate(self, flag):
+        self._processor.setdilate(flag)
+
+    def open(self, flag):
+        self._processor.setopen(flag)
+
+    def close(self, flag):
+        self._processor.setcolse(flag)
+
+    def setthresh(self, thresh):
+        self._processor.setthresh(thresh)
+
     def chechsimilarity(self):
         image1 = self.getlastimage(index=-1)
         image2 = self.getlastimage(index=-2)
         similarity = self._processor.chechsimilarity(image1, image2)
-        print("Similarity = " + str(round(similarity, 5)))
+        print("Diff = " + str(round(similarity, 5)))
 
     def setapplymask(self, flag):
         self._applymask = flag
@@ -74,7 +89,7 @@ class Facade(threading.Thread):
 
     def getbinaryvideo(self):
         self._processor.updatehsv(hsvlow=self.hsvlow, hsvhigh=self.hsvhigh)
-        self.binaryframe = self._processor.getbinaryframe()
+        self.binaryframe = self._processor.getrawmask()
         return self.binaryframe
 
     def getcleanframe(self):
@@ -91,7 +106,7 @@ class Facade(threading.Thread):
             frame = self.getcleanframe()
         self._imageregister.addimg(frame)
         print("[INFO] The button was pressed")
-        if self._imageregister.getlength() > 1:
+        if self._imageregister.getlength() > 3:
             self.chechsimilarity()
 
     def gettriggerpress(self):

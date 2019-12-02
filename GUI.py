@@ -71,6 +71,12 @@ class MainWindow(threading.Thread):
                                                 command=self.opensecondimagepage)
         self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black', command=self.savemasked)
         self.chechsimilaritybtn = Button(self.root, text="Similarity", fg='black', command=self.chechsimilarity)
+
+        self.erodebtn = Button(self.root, text="Erode", relief="raised", command=self.erode)
+        self.dilateebtn = Button(self.root, text="Dilate", relief="raised", command=self.dilate)
+        self.openbtn = Button(self.root, text="Open", relief="raised", command=self.open)
+        self.closebtn = Button(self.root, text="Close", relief="raised", command=self.close)
+
         self._hsvcolor.set(self._hsvpresets[0])
         self._hsvcolor.trace("w", self.setpreset)
 
@@ -91,6 +97,10 @@ class MainWindow(threading.Thread):
         self.startsecondlastimgpagebtn.grid(row=8, column=6)
         self.savemaskedbtn.grid(row=9, column=5)
         self.chechsimilaritybtn.grid(row=10, column=5)
+        self.erodebtn.grid(row=11, column=5)
+        self.dilateebtn.grid(row=12, column=5)
+        self.openbtn.grid(row=13, column=5)
+        self.closebtn.grid(row=14, column=5)
 
         self.folderPath = StringVar()
 
@@ -121,6 +131,9 @@ class MainWindow(threading.Thread):
         self.val_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_max)
         self.val_min_label = Label(self.root, text="Value min", fg='black')
         self.val_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_min)
+        self.threshentry = Entry(self.root)
+        self.threshlabel = Label(self.root, text="Set thresh: ", fg='black')
+        self.threshenter = Button(self.root, text="Enter", command=self.enterthresh)
 
         self.hue_max_label.grid(row=7, column=2)
         self.hue_max_scale.grid(row=7, column=3)
@@ -136,7 +149,9 @@ class MainWindow(threading.Thread):
         self.val_max_scale.grid(row=11, column=3)
         self.val_min_label.grid(row=12, column=2)
         self.val_min_scale.grid(row=12, column=3)
-
+        self.threshlabel.grid(row=13, column=2)
+        self.threshentry.grid(row=14, column=2)
+        self.threshenter.grid(row=15, column=2)
         # Start it all
         #self.updater()
         #self.root.after(30, self.updater)
@@ -146,6 +161,44 @@ class MainWindow(threading.Thread):
         self.facade.gettriggerpress()
         self.sethsvvalues()
         #self.root.after(30, self.updater())
+
+    def enterthresh(self):
+        threshstring = self.threshentry.get()
+        threshint = int(threshstring)
+        self.facade.setthresh(threshint)
+
+    def erode(self):
+        if self.erodebtn.config('relief')[-1] == 'sunken':
+            self.erodebtn.config(relief="raised", text="Erode")
+            self.facade.erode(flag=False)
+        else:
+            self.erodebtn.config(relief="sunken", text="UnErode")
+            self.facade.erode(flag=True)
+
+    def dilate(self):
+        if self.dilateebtn.config('relief')[-1] == 'sunken':
+            self.dilateebtn.config(relief="raised", text="Dilate")
+            self.facade.dilate(flag=False)
+        else:
+            self.dilateebtn.config(relief="sunken", text="UnDilate")
+            self.facade.dilate(flag=True)
+
+    def open(self):
+        if self.openbtn.config('relief')[-1] == 'sunken':
+            self.openbtn.config(relief="raised", text="Open")
+            self.facade.open(flag=False)
+        else:
+            self.openbtn.config(relief="sunken", text="UnOpen")
+            self.facade.open(flag=True)
+
+    def close(self):
+        if self.closebtn.config('relief')[-1] == 'sunken':
+            self.closebtn.config(relief="raised", text="Close")
+            self.facade.close(flag=False)
+        else:
+            self.closebtn.config(relief="sunken", text="UnClose")
+            self.facade.close(flag=True)
+
 
     def chechsimilarity(self):
         self.facade.chechsimilarity()
@@ -247,6 +300,7 @@ class MainWindow(threading.Thread):
             self.startsecondlastimgpagebtn.config(relief="raised", text="Start Second Image display")
         elif self.secondimagepageopen:
             self.startsecondlastimgpagebtn.config(relief="sunken", text="Stop Second Image display")
+
 
     def stopcamerapage(self):
         self.camerapage.destructor()
