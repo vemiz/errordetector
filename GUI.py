@@ -1,11 +1,5 @@
 """
-GUI applikasjon for deteksjon av feil i 3d-printing.
-Den skal ha eit konfigurerings vindu, der bruker kan gi input til hsv terskling og cropping,
-samt lagringssted for timelapsen/bilda.
-Den skal ha eit preview vindu av camera feeden.
-Den skal ha eit vindu for å loope timelapsen.
-Den skal ha ei status linje, som skal varsle om feil blir oppdaga. Denne skal vere synlig i alle vindu.
-Den skal ha knappar for å skifte vindu.
+This GUI package is the frontend of the 3D printer error detection application.
 """
 import tkinter as tk
 from tkinter import ttk, filedialog
@@ -19,8 +13,14 @@ import json
 
 
 class MainWindow(threading.Thread):
+    """
+    A class representing the Main window of the application.
+    """
 
     def __init__(self, facade):
+        """
+        :param facade: Facade instance that connects backend functionality
+        """
         threading.Thread.__init__(self)
         self.facade = facade
 
@@ -30,26 +30,48 @@ class MainWindow(threading.Thread):
             "Color2",
             "Color3",
         ]
-
-        self.camerapage = None
-        self.imagepage = None
-        self.secondimagepage = None
-        self.camerapageopen = False
-        self.imagepageopen = False
-        self.secondimagepageopen = False
-        self.savemaskedon = False
+        # GUI handling flags
+        self._camerapage = None
+        self._imagepage = None
+        self._secondimagepage = None
+        self._camerapageopen = False
+        self._imagepageopen = False
+        self._secondimagepageopen = False
+        self._savemaskedon = False
 
     def run(self):
-
+        """
+        Starts the application
+        """
+        # Setup window
         self.root = Tk()
         self.root.geometry("800x400")
         self.root.title("3D print error detection")
         self.label1 = Label(self.root, text="Error detection", fg='black')
         self.root.protocol('WM_DELETE_WINDOW', self.quit)
-        # Buttons
+
+        self._folderPath = StringVar()
+
+        # HSV Presets
         self._hsvcolor = tk.StringVar(self.root)
+        self._hsvcolor.set(self._hsvpresets[0])
+        self._hsvcolor.trace("w", self.setpreset)
 
+        # HSV variables
+        self._hue_max = tk.IntVar()
+        self._hue_max.set(179)
+        self._hue_min = tk.IntVar()
+        self._hue_min.set(0)
+        self._sat_max = tk.IntVar()
+        self._sat_max.set(255)
+        self._sat_min = tk.IntVar()
+        self._sat_min.set(0)
+        self._val_max = tk.IntVar()
+        self._val_max.set(255)
+        self._val_min = tk.IntVar()
+        self._val_min.set(0)
 
+        # Buttons TODO: Set static width to all
         self.startcamerabtn = Button(self.root, text="Start camera", width=14,
                                      relief="raised", fg='black', command=self.opencamerapage)
         self.quitbtn = Button(self.root, text="Quit", fg='black', command=self.quit)
@@ -69,7 +91,8 @@ class MainWindow(threading.Thread):
                                           command=self.openimagepage)
         self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised",
                                                 command=self.opensecondimagepage)
-        self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black', command=self.savemasked)
+        self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black',
+                                    command=self.savemasked)
         self.chechsimilaritybtn = Button(self.root, text="Similarity", fg='black', command=self.chechsimilarity)
 
         self.erodebtn = Button(self.root, text="Erode", relief="raised", command=self.erode)
@@ -77,10 +100,11 @@ class MainWindow(threading.Thread):
         self.openbtn = Button(self.root, text="Open", relief="raised", command=self.open)
         self.closebtn = Button(self.root, text="Close", relief="raised", command=self.close)
 
-        self._hsvcolor.set(self._hsvpresets[0])
-        self._hsvcolor.trace("w", self.setpreset)
+        self.threshenter = Button(self.root, text="Enter", command=self.enterthresh)
+        self.threshentry = Entry(self.root)
+        self.threshlabel = Label(self.root, text="Set thresh: ", fg='black')
 
-        # Placing elements
+        # Placing elements TODO: Clean up button placement
         self.label1.grid(row=0, column=2)
         self.startcamerabtn.grid(row=6, column=2)
         self.quitbtn.grid(row=6, column=6)
@@ -102,22 +126,6 @@ class MainWindow(threading.Thread):
         self.openbtn.grid(row=13, column=5)
         self.closebtn.grid(row=14, column=5)
 
-        self.folderPath = StringVar()
-
-        # HSV variables
-        self._hue_max = tk.IntVar()
-        self._hue_max.set(179)
-        self._hue_min = tk.IntVar()
-        self._hue_min.set(0)
-        self._sat_max = tk.IntVar()
-        self._sat_max.set(255)
-        self._sat_min = tk.IntVar()
-        self._sat_min.set(0)
-        self._val_max = tk.IntVar()
-        self._val_max.set(255)
-        self._val_min = tk.IntVar()
-        self._val_min.set(0)
-
         # Hue, Saturation, Value
         self.hue_max_label = Label(self.root, text="Hue max", fg='black')
         self.hue_max_scale = Scale(self.root, from_=0, to=179, length=200, orient=HORIZONTAL, variable=self._hue_max)
@@ -131,10 +139,7 @@ class MainWindow(threading.Thread):
         self.val_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_max)
         self.val_min_label = Label(self.root, text="Value min", fg='black')
         self.val_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_min)
-        self.threshentry = Entry(self.root)
-        self.threshlabel = Label(self.root, text="Set thresh: ", fg='black')
-        self.threshenter = Button(self.root, text="Enter", command=self.enterthresh)
-
+        # Hue
         self.hue_max_label.grid(row=7, column=2)
         self.hue_max_scale.grid(row=7, column=3)
         self.hue_min_label.grid(row=8, column=2)
@@ -152,22 +157,30 @@ class MainWindow(threading.Thread):
         self.threshlabel.grid(row=13, column=2)
         self.threshentry.grid(row=14, column=2)
         self.threshenter.grid(row=15, column=2)
-        # Start it all
-        #self.updater()
-        #self.root.after(30, self.updater)
+
+        # Start GUI mainloop
         self.root.mainloop()
 
     def updater(self):
+        """
+        Tells facade to listen for button press.
+        Sets the hsvvalues
+        """
         self.facade.gettriggerpress()
         self.sethsvvalues()
-        #self.root.after(30, self.updater())
 
     def enterthresh(self):
+        """
+        Sends entry threshold to facade.
+        """
         threshstring = self.threshentry.get()
         threshint = int(threshstring)
         self.facade.setthresh(threshint)
 
     def erode(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.erodebtn.config('relief')[-1] == 'sunken':
             self.erodebtn.config(relief="raised", text="Erode")
             self.facade.erode(flag=False)
@@ -176,6 +189,9 @@ class MainWindow(threading.Thread):
             self.facade.erode(flag=True)
 
     def dilate(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.dilateebtn.config('relief')[-1] == 'sunken':
             self.dilateebtn.config(relief="raised", text="Dilate")
             self.facade.dilate(flag=False)
@@ -184,6 +200,9 @@ class MainWindow(threading.Thread):
             self.facade.dilate(flag=True)
 
     def open(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.openbtn.config('relief')[-1] == 'sunken':
             self.openbtn.config(relief="raised", text="Open")
             self.facade.open(flag=False)
@@ -192,6 +211,9 @@ class MainWindow(threading.Thread):
             self.facade.open(flag=True)
 
     def close(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.closebtn.config('relief')[-1] == 'sunken':
             self.closebtn.config(relief="raised", text="Close")
             self.facade.close(flag=False)
@@ -199,18 +221,8 @@ class MainWindow(threading.Thread):
             self.closebtn.config(relief="sunken", text="UnClose")
             self.facade.close(flag=True)
 
-
     def chechsimilarity(self):
         self.facade.chechsimilarity()
-
-    def getcamerapageopen(self):
-        return self.camerapageopen
-
-    def getimagepageopen(self):
-        return self.imagepageopen
-
-    def getsecondimagepageopen(self):
-        return self.secondimagepageopen
 
     def setpreset(self, *args):
         self.usehsvpreset()
@@ -223,7 +235,6 @@ class MainWindow(threading.Thread):
         self._val_max.set(255)
         self._val_min.set(0)
 
-    # https://www.youtube.com/watch?v=rz1NFzMSJGY
     def savehsvpreset(self):
         self._hsvpreset[str(self._hsvcolor.get())] = []
         self._hsvpreset[str(self._hsvcolor.get())].append({
@@ -255,78 +266,91 @@ class MainWindow(threading.Thread):
         self.facade.sethsvhigh(value=self.hsv_high)
 
     def opencamerapage(self):
-        if not self.camerapageopen:
-            self.camerapage = Camerapage(facade=self.facade, parent=self)
-            self.camerapageopen = True
+        """
+        Button handling relief and set flag.
+        Instantiates a Camera page if not already opened.
+        """
+        if not self._camerapageopen:
+            self._camerapage = Camerapage(facade=self.facade, parent=self)
+            self._camerapageopen = True
         else:
             self.stopcamerapage()
-            self.camerapageopen = False
+            self._camerapageopen = False
 
         if self.startcamerabtn.config('relief')[-1] == 'sunken':
             self.startcamerabtn.config(relief="raised", text="Start Camera")
-        elif self.camerapageopen:
+        elif self._camerapageopen:
             self.startcamerabtn.config(relief="sunken", text="Stop Camera")
 
     def openimagepage(self):
-
-        if not self.imagepageopen:
+        """
+        Button handling relief and set flag.
+        Instantiates a Image page if not already opened.
+        """
+        if not self._imagepageopen:
             if not self.facade.isregempty():
-                self.imagepage = Imagepage(facade=self.facade, reversedindex=-1)
-                self.imagepageopen = True
+                self._imagepage = Imagepage(facade=self.facade, reversedindex=-1)
+                self._imagepageopen = True
             else:
                 print("Image register is empty!!")
         else:
             self.stopimagepage()
-            self.imagepageopen = False
+            self._imagepageopen = False
 
         if self.startlastimgpagebtn.config('relief')[-1] == 'sunken':
             self.startlastimgpagebtn.config(relief="raised", text="Start Image display")
-        elif self.imagepageopen:
+        elif self._imagepageopen:
             self.startlastimgpagebtn.config(relief="sunken", text="Stop Image display")
 
     def opensecondimagepage(self):
-
-        if not self.secondimagepageopen:
+        """
+        Button handling relief and set flag.
+        Instantiates a Image page if not already opened.
+        """
+        if not self._secondimagepageopen:
             if not self.facade.isregempty():
-                self.secondimagepage = Imagepage(facade=self.facade, reversedindex=-2)
-                self.secondimagepageopen = True
+                self._secondimagepage = Imagepage(facade=self.facade, reversedindex=-2)
+                self._secondimagepageopen = True
             else:
                 print("Image register is empty!!")
         else:
             self.stopsecondimagepage()
-            self.secondimagepageopen = False
+            self._secondimagepageopen = False
 
         if self.startsecondlastimgpagebtn.config('relief')[-1] == 'sunken':
             self.startsecondlastimgpagebtn.config(relief="raised", text="Start Second Image display")
-        elif self.secondimagepageopen:
+        elif self._secondimagepageopen:
             self.startsecondlastimgpagebtn.config(relief="sunken", text="Stop Second Image display")
 
-
     def stopcamerapage(self):
-        self.camerapage.destructor()
+        self._camerapage.destructor()
 
     def stopimagepage(self):
-        self.imagepage.destructor()
+        self._imagepage.destructor()
 
     def stopsecondimagepage(self):
-        self.secondimagepage.destructor()
+        self._secondimagepage.destructor()
 
     def getcamerapage(self):
-        return self.camerapage
+        return self._camerapage
 
     def quit(self):
         self.root.destroy()
 
+    # TODO: Implement or remove Timelapse functionallity
     def starttimelapse(self):
         folder_selected = filedialog.askdirectory()
-        self.folderPath.set(folder_selected)
+        self._folderPath.set(folder_selected)
         pass
 
     def stoptimelapse(self):
         pass
 
     def addmask(self):
-        if self.camerapageopen:
+        """
+        Button handling relief and set flag.
+        """
+        if self._camerapageopen:
             if self.addmaskbtn.config('relief')[-1] == 'sunken':
                 self.addmaskbtn.config(relief="raised", text="Add Mask")
                 print("[INFO] Removing mask")
@@ -339,6 +363,9 @@ class MainWindow(threading.Thread):
             print("[INFO] Camera page is not open...")
 
     def invertmask(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.facade.getapplymask():
             if self.invertmaskbtn.config('relief')[-1] == 'sunken':
                 self.invertmaskbtn.config(relief="raised", text="Invert Mask")
@@ -352,23 +379,32 @@ class MainWindow(threading.Thread):
             print("Mask not applied...")
 
     def savemasked(self):
+        """
+        Button handling relief and set flag.
+        """
         if self.savemaskedbtn.config('relief')[-1] == 'sunken':
             self.savemaskedbtn.config(relief="raised", text="Save Masked Images")
-            self.savemaskedon = False
+            self._savemaskedon = False
         else:
             self.savemaskedbtn.config(relief="sunken", text="Save Unmasked Images")
-            self.savemaskedon = True
+            self._savemaskedon = True
 
-        if self.savemaskedon:
+        if self._savemaskedon:
             self.facade.setsavemasked(True)
         else:
             self.facade.setsavemasked(False)
 
 
-
-class Camerapage():  # threading.Thread):
+class Camerapage():
+    """
+    A class representing the Camera page of the application.
+    """
     def __init__(self, facade, parent):
-        # threading.Thread.__init__(self)
+        """
+        :param facade: Facade instance that connects backend functionality
+        :param parent: Parent window running GUI mainloop
+        """
+
         self.root = Toplevel()
         self.facade = facade
         self.parent = parent
@@ -387,6 +423,10 @@ class Camerapage():  # threading.Thread):
         self.run()
 
     def run(self):
+        """
+        Pulling frames from facade for displaying.
+        Reruns after 30ms to update window.
+        """
         self.parent.updater()
         if self.facade.getapplymask():
             if self.facade.getbinarymask():
@@ -416,9 +456,12 @@ class Camerapage():  # threading.Thread):
         camerapageopen = False
 
 
-class Imagepage():  # threading.Thread):
+class Imagepage():
+    """
+    A class representing the Image page of the application.
+    """
     def __init__(self, facade, reversedindex):
-        # threading.Thread.__init__(self)
+
         self.root = Toplevel()
         self.facade = facade
         self.reversedindex = reversedindex
@@ -436,11 +479,12 @@ class Imagepage():  # threading.Thread):
         self.current_image = None
 
         self.run()
-        # self.daemon = True
-        # self.start()
 
     def run(self):
-
+        """
+        Pulling frames from facade for displaying.
+        Reruns after 1s to update window.
+        """
         self.current_image = self.facade.getlastimage(index=self.reversedindex)
         imgtk = ImageTk.PhotoImage(self.current_image)
         self.panel.imgtk = imgtk

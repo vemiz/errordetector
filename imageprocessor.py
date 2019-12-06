@@ -5,14 +5,21 @@ import threading
 
 
 class Processor(threading.Thread):
+    """
+    Represents an image processor. Handles image processing operations
+    """
     def __init__(self, facade):
+        """
+        :param facade: Facade instance that connects backend functionality
+        """
         threading.Thread.__init__(self)
         self.facade = facade
+
         self.hsv_low = None
         self.hsv_high = None
-        self.kernal = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
         self.rawmask = None
-        #Flags
+        self.kernal = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        # Flags
         self.eroded = False
         self.dilated = False
         self.open = False
@@ -23,6 +30,10 @@ class Processor(threading.Thread):
         self.start()
 
     def get_clean_video_stream(self):
+        """
+        Converts the frame from BGR to RGB colorspace
+        :return: PIL RGB image
+        """
         frame = self.facade.getcameraframe()
         # Check if frame is empty. The first few at camera startup will be.
         if np.any(frame):
@@ -31,6 +42,11 @@ class Processor(threading.Thread):
             return self.current_image
 
     def get_masked_video(self, inverted=False):
+        """
+        Masks the frame according to hsv and morph
+        :param inverted: Flag for inverting mask
+        :return: Masked PIL image
+        """
         frame = self.facade.getcameraframe()
         if self.hsv_low is not None:
             hsvimage = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
