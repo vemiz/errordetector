@@ -2,8 +2,9 @@
 This GUI package is the frontend of the 3D printer error detection application.
 """
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 from tkinter import *
+import ttkthemes
 import threading
 import PIL
 import numpy as np
@@ -45,9 +46,12 @@ class MainWindow(threading.Thread):
         """
         # Setup window
         self.root = Tk()
-        self.root.geometry("800x400")
+        self.root.iconbitmap(self, default="clienticon.ico")
+        self.root.style = ttkthemes.ThemedStyle()
+        self.root.style.theme_use('black')
+        # self.root.geometry("800x400")
         self.root.title("3D print error detection")
-        self.label1 = Label(self.root, text="Error detection", fg='black')
+        self.label1 = Label(self.root, text="3D print Error Detection Application", font=2)
         self.root.protocol('WM_DELETE_WINDOW', self.quit)
 
         self._folderPath = StringVar()
@@ -70,93 +74,128 @@ class MainWindow(threading.Thread):
         self._val_max.set(255)
         self._val_min = tk.IntVar()
         self._val_min.set(0)
+        # Frames
+        self.cameracontrolframe = Frame(self.root)
+        self.cameracontrolframe.grid(row=1, column=1, columnspan=4)
+        self.hsvframe = Frame(self.root)
+        self.hsvframe.grid(row=3, column=1, rowspan=8, columnspan=3)
+        self.maskbtnframe = Frame(self.hsvframe)
+        self.maskbtnframe.grid(row=7, column=2, rowspan=2)
+        self.hsvpresetframe = Frame(self.root)
+        self.hsvpresetframe.grid(row=4, column=4, rowspan=4, sticky="W")
+        self.morphframe = Frame(self.root)
+        self.morphframe.grid(row=8, column=4, rowspan=4, sticky="W")
 
-        # Buttons TODO: Set static width to all
-        self.startcamerabtn = Button(self.root, text="Start camera", width=14,
+        self.hsvlabel = Label(self.hsvframe, text="HSV thresholding", font=2)
+        self.hsvlabel.grid(row=0, column=0, columnspan=3, pady=5, sticky="S")
+        # Buttons
+        self.startcamerabtn = Button(self.cameracontrolframe, text="Start camera", width=14,
                                      relief="raised", fg='black', command=self.opencamerapage)
-        self.quitbtn = Button(self.root, text="Quit", fg='black', command=self.quit)
+        self.savemaskedbtn = Button(self.cameracontrolframe, text="Save Masked Images", width=18,
+                                    relief="raised", fg='black', command=self.savemasked)
+        self.startlastimgpagebtn = Button(self.cameracontrolframe, text="Latest Image", width=14,
+                                          relief="raised", command=self.openimagepage)
+        self.startsecondlastimgpagebtn = Button(self.cameracontrolframe, text="Second to Last Image", width=18,
+                                                relief="raised", command=self.opensecondimagepage)
+        self.quitbtn = Button(self.cameracontrolframe, text="Quit", width=10, fg='black', command=self.quit)
+
         self.starttimelapsebtn = Button(self.root, text="Start timelapse", fg='black', command=self.starttimelapse)
         self.stoptimelapsebtn = Button(self.root, text="Stop timelapse", fg='black', command=self.stoptimelapse)
-        self.addmaskbtn = Button(self.root, text="Add Mask", width=14, relief="raised", fg='black',
+        self.addmaskbtn = Button(self.maskbtnframe, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
-        self.invertmaskbtn = Button(self.root, text="Invert Mask", width=14, relief="raised", fg='black',
+        self.invertmaskbtn = Button(self.maskbtnframe, text="Invert Mask", width=14, relief="raised", fg='black',
                                     command=self.invertmask)
-        self.hsvresetbtn = Button(self.root, text="Reset HSV", fg='black', command=self.hsvreset)
-        self.hsvpresetbtn = Button(self.root, text="Save HSV Preset", fg='black', command=self.savehsvpreset)
-        self.usehsvpresetbtn = Button(self.root, text="Use HSV Preset", fg='black', command=self.usehsvpreset)
-        self.presetmenu = OptionMenu(self.root, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1],
+        self.hsvresetbtn = Button(self.hsvpresetframe, text="Reset HSV", fg='black', width=12, command=self.hsvreset)
+        self.hsvpresetbtn = Button(self.hsvpresetframe, text="Save HSV Preset", fg='black', width=12,
+                                   command=self.savehsvpreset)
+        self.usehsvpresetbtn = Button(self.hsvpresetframe, text="Use HSV Preset", fg='black', width=12,
+                                      command=self.usehsvpreset)
+        self.presetmenu = OptionMenu(self.hsvpresetframe, self._hsvcolor, self._hsvpresets[0], self._hsvpresets[1],
                                      self._hsvpresets[2])
+        self.presetmenu.config(width=9)
         self.prntbtn = Button(self.root, text="Print", command=self.facade.printregister)
-        self.startlastimgpagebtn = Button(self.root, text="Start Last Image", relief="raised",
-                                          command=self.openimagepage)
-        self.startsecondlastimgpagebtn = Button(self.root, text="Start Second to Last Image", relief="raised",
-                                                command=self.opensecondimagepage)
-        self.savemaskedbtn = Button(self.root, text="Save Masked Images", relief="raised", fg='black',
-                                    command=self.savemasked)
+
         self.chechsimilaritybtn = Button(self.root, text="Similarity", fg='black', command=self.chechsimilarity)
 
-        self.erodebtn = Button(self.root, text="Erode", relief="raised", command=self.erode)
-        self.dilateebtn = Button(self.root, text="Dilate", relief="raised", command=self.dilate)
-        self.openbtn = Button(self.root, text="Open", relief="raised", command=self.open)
-        self.closebtn = Button(self.root, text="Close", relief="raised", command=self.close)
+        self.erodebtn = Button(self.morphframe, text="Erode",width=12, relief="raised", command=self.erode)
+        self.dilateebtn = Button(self.morphframe, text="Dilate", width=12, relief="raised", command=self.dilate)
+        self.openbtn = Button(self.morphframe, text="Open", width=12, relief="raised", command=self.open)
+        self.closebtn = Button(self.morphframe, text="Close", width=12, relief="raised", command=self.close)
 
         self.threshenter = Button(self.root, text="Enter", command=self.enterthresh)
         self.threshentry = Entry(self.root)
         self.threshlabel = Label(self.root, text="Set thresh: ", fg='black')
 
-        # Placing elements TODO: Clean up button placement
-        self.label1.grid(row=0, column=2)
-        self.startcamerabtn.grid(row=6, column=2)
-        self.quitbtn.grid(row=6, column=6)
-        self.starttimelapsebtn.grid(row=6, column=4)
-        self.stoptimelapsebtn.grid(row=6, column=5)
-        self.addmaskbtn.grid(row=7, column=4)
-        self.invertmaskbtn.grid(row=7, column=5)
-        self.hsvresetbtn.grid(row=8, column=4)
-        self.hsvpresetbtn.grid(row=9, column=4)
-        self.usehsvpresetbtn.grid(row=10, column=4)
-        self.presetmenu.grid(row=11, column=4)
-        self.prntbtn.grid(row=12, column=4)
-        self.startlastimgpagebtn.grid(row=8, column=5)
-        self.startsecondlastimgpagebtn.grid(row=8, column=6)
-        self.savemaskedbtn.grid(row=9, column=5)
-        self.chechsimilaritybtn.grid(row=10, column=5)
+        self.aboutbtn = Button(self.root, text="About", command=self.showaboutinfo)
+
+        # Placing elements
+        self.label1.grid(row=0, column=1, columnspan=5, pady=10)
+
+        self.startcamerabtn.grid(row=0, column=0)
+        self.savemaskedbtn.grid(row=0, column=1)
+        self.startlastimgpagebtn.grid(row=0, column=2)
+        self.startsecondlastimgpagebtn.grid(row=0, column=3)
+        self.quitbtn.grid(row=0, column=4)
+
+        # self.starttimelapsebtn.grid(row=6, column=4)
+        # self.stoptimelapsebtn.grid(row=6, column=5)
+
+        self.hsvresetbtn.grid(row=4, column=1)
+        self.hsvpresetbtn.grid(row=3, column=1)
+        self.usehsvpresetbtn.grid(row=1, column=1)
+        self.presetmenu.grid(row=2, column=1)
+
+        self.prntbtn.grid(row=14, column=3, sticky="E")
+        self.chechsimilaritybtn.grid(row=14, column=4, sticky="W")
+
+        self.addmaskbtn.grid(row=1, column=1, rowspan=2, sticky="E")
+        self.invertmaskbtn.grid(row=1, column=2, rowspan=2, sticky="W")
+
         self.erodebtn.grid(row=11, column=5)
         self.dilateebtn.grid(row=12, column=5)
         self.openbtn.grid(row=13, column=5)
         self.closebtn.grid(row=14, column=5)
-
-        # Hue, Saturation, Value
-        self.hue_max_label = Label(self.root, text="Hue max", fg='black')
-        self.hue_max_scale = Scale(self.root, from_=0, to=179, length=200, orient=HORIZONTAL, variable=self._hue_max)
-        self.hue_min_label = Label(self.root, text="Hue min", fg='black')
-        self.hue_min_scale = Scale(self.root, from_=0, to=179, length=200, orient=HORIZONTAL, variable=self._hue_min)
-        self.sat_max_label = Label(self.root, text="Saturation max", fg='black')
-        self.sat_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._sat_max)
-        self.sat_min_label = Label(self.root, text="Saturation min", fg='black')
-        self.sat_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._sat_min)
-        self.val_max_label = Label(self.root, text="Value max", fg='black')
-        self.val_max_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_max)
-        self.val_min_label = Label(self.root, text="Value min", fg='black')
-        self.val_min_scale = Scale(self.root, from_=0, to=255, length=200, orient=HORIZONTAL, variable=self._val_min)
-        # Hue
-        self.hue_max_label.grid(row=7, column=2)
-        self.hue_max_scale.grid(row=7, column=3)
-        self.hue_min_label.grid(row=8, column=2)
-        self.hue_min_scale.grid(row=8, column=3)
-        # Saturation
-        self.sat_max_label.grid(row=9, column=2)
-        self.sat_max_scale.grid(row=9, column=3)
-        self.sat_min_label.grid(row=10, column=2)
-        self.sat_min_scale.grid(row=10, column=3)
-        # Value
-        self.val_max_label.grid(row=11, column=2)
-        self.val_max_scale.grid(row=11, column=3)
-        self.val_min_label.grid(row=12, column=2)
-        self.val_min_scale.grid(row=12, column=3)
         self.threshlabel.grid(row=13, column=2)
         self.threshentry.grid(row=14, column=2)
         self.threshenter.grid(row=15, column=2)
+
+        self.aboutbtn.grid(row=0, column=4, sticky="E")
+
+        # Hue, Saturation, Value
+        self.hue_max_label = Label(self.hsvframe, text="Hue max")
+        self.hue_max_scale = Scale(self.hsvframe, from_=0, to=179, length=200, orient=HORIZONTAL,
+                                   variable=self._hue_max)
+        self.hue_min_label = Label(self.hsvframe, text="Hue min")
+        self.hue_min_scale = Scale(self.hsvframe, from_=0, to=179, length=200, orient=HORIZONTAL,
+                                   variable=self._hue_min)
+        self.sat_max_label = Label(self.hsvframe, text="Saturation max")
+        self.sat_max_scale = Scale(self.hsvframe, from_=0, to=255, length=200, orient=HORIZONTAL,
+                                   variable=self._sat_max)
+        self.sat_min_label = Label(self.hsvframe, text="Saturation min")
+        self.sat_min_scale = Scale(self.hsvframe, from_=0, to=255, length=200, orient=HORIZONTAL,
+                                   variable=self._sat_min)
+        self.val_max_label = Label(self.hsvframe, text="Value max")
+        self.val_max_scale = Scale(self.hsvframe, from_=0, to=255, length=200, orient=HORIZONTAL,
+                                   variable=self._val_max)
+        self.val_min_label = Label(self.hsvframe, text="Value min")
+        self.val_min_scale = Scale(self.hsvframe, from_=0, to=255, length=200, orient=HORIZONTAL,
+                                   variable=self._val_min)
+        # Hue
+        self.hue_max_label.grid(row=1, column=1, sticky="E")
+        self.hue_max_scale.grid(row=1, column=2)
+        self.hue_min_label.grid(row=2, column=1, sticky="E")
+        self.hue_min_scale.grid(row=2, column=2)
+        # Saturation
+        self.sat_max_label.grid(row=3, column=1, sticky="E")
+        self.sat_max_scale.grid(row=3, column=2)
+        self.sat_min_label.grid(row=4, column=1, sticky="E")
+        self.sat_min_scale.grid(row=4, column=2)
+        # Value
+        self.val_max_label.grid(row=5, column=1, sticky="E")
+        self.val_max_scale.grid(row=5, column=2)
+        self.val_min_label.grid(row=6, column=1, sticky="E")
+        self.val_min_scale.grid(row=6, column=2)
+
 
         # Start GUI mainloop
         self.root.mainloop()
@@ -168,6 +207,14 @@ class MainWindow(threading.Thread):
         """
         self.facade.gettriggerpress()
         self.sethsvvalues()
+
+    def showaboutinfo(self):
+        """
+        Pop-up message box containing About info
+        """
+        messagebox.showinfo("About", "3D print error detection\n"
+                                     "Author: Tomas Paulsen\n"
+                                     "Version: 1.0")
 
     def enterthresh(self):
         """
@@ -399,6 +446,7 @@ class Camerapage():
     """
     A class representing the Camera page of the application.
     """
+
     def __init__(self, facade, parent):
         """
         :param facade: Facade instance that connects backend functionality
@@ -460,6 +508,7 @@ class Imagepage():
     """
     A class representing the Image page of the application.
     """
+
     def __init__(self, facade, reversedindex):
 
         self.root = Toplevel()
