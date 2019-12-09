@@ -80,11 +80,16 @@ class Camera:
 
     def terminate(self):
         self.stopped = True
+        if not self.usepicamera:
+            if self.cam.isOpened():
+                self.cam.release()
+                cv2.destroyAllWindows()
+
 
     def __del__(self):
         self.stopped = True
         if not self.usepicamera:
             if self.cam.isOpened():
                 self.cam.release()
-                cv2.destroyAllWindoes()
+                cv2.destroyAllWindows()
 

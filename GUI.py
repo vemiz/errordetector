@@ -42,7 +42,7 @@ class MainWindow(threading.Thread):
 
     def run(self):
         """
-        Starts the application
+        Starts the application.
         """
         # Setup window
         self.root = Tk()
@@ -99,8 +99,8 @@ class MainWindow(threading.Thread):
                                                 relief="raised", command=self.opensecondimagepage)
         self.quitbtn = Button(self.cameracontrolframe, text="Quit", width=10, fg='black', command=self.quit)
 
-        self.starttimelapsebtn = Button(self.root, text="Start timelapse", fg='black', command=self.starttimelapse)
-        self.stoptimelapsebtn = Button(self.root, text="Stop timelapse", fg='black', command=self.stoptimelapse)
+        self.startloggingbtn = Button(self.root, text="Start logging", fg='black', command=self.startlogging)
+
         self.addmaskbtn = Button(self.maskbtnframe, text="Add Mask", width=14, relief="raised", fg='black',
                                  command=self.addmask)
         self.invertmaskbtn = Button(self.maskbtnframe, text="Invert Mask", width=14, relief="raised", fg='black',
@@ -137,8 +137,7 @@ class MainWindow(threading.Thread):
         self.startsecondlastimgpagebtn.grid(row=0, column=3)
         self.quitbtn.grid(row=0, column=4)
 
-        # self.starttimelapsebtn.grid(row=6, column=4)
-        # self.stoptimelapsebtn.grid(row=6, column=5)
+        #self.startloggingbtn.grid(row=13, column=4, sticky="w")
 
         self.hsvresetbtn.grid(row=4, column=1)
         self.hsvpresetbtn.grid(row=3, column=1)
@@ -382,16 +381,13 @@ class MainWindow(threading.Thread):
         return self._camerapage
 
     def quit(self):
+        self.facade.quit()
         self.root.destroy()
 
-    # TODO: Implement or remove Timelapse functionallity
-    def starttimelapse(self):
-        folder_selected = filedialog.askdirectory()
-        self._folderPath.set(folder_selected)
-        pass
-
-    def stoptimelapse(self):
-        pass
+    def startlogging(self):
+        folder_selected = filedialog.asksaveasfile(defaultextension=".csv")
+        self.facade.setlogfilename(folder_selected)
+        #self._folderPath.set(folder_selected)
 
     def addmask(self):
         """

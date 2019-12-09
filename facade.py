@@ -35,6 +35,9 @@ class Facade(threading.Thread):
     def run(self):
         self.gettriggerpress()
 
+    def setlogfilename(self, name):
+        self._processor.setlogfilename(name)
+
     def erode(self, flag):
         """
         Set erode flag in processor instance
@@ -222,4 +225,8 @@ class Facade(threading.Thread):
         :param flag:
         """
         self.savemaskedon = flag
+
+    def quit(self):
+        self._camera.terminate()
+
 
