@@ -1,18 +1,31 @@
 """
-Kravspec:
-Deteksjon av feil i 3d-printing. Programmet skal monitorere 3d-printing ved kamera.
-Det skal oppdage om det blir feil på printet, og varsle brukeren.
-Det skal sammenligne bilde med gitt mellomrom for å finne endring som er større enn ein gitt terskel.
-Det skal vise live feed frå kamera. Det skal lage timelapse av bilda, og loope det til brukeren.
-Det skal ha muligheit for å sette parameter som hsv-verdiar, manuellt croppe bilde.
-Det skal også croppe dysa ut av bilde ved å spore ein aruco tag.
-Det skal lagre timelapsen når printet er ferdig (bruker styrt).
+3D printer error detection application.
+This is the main entry for the application.
+This application is part of a bachelor thesis project
+at NTNU Ålesund Department of ICT and Natural Sciences.
+Developed and written by Tomas Paulsen.
+
+RUN:    On Raspberry pi set "useRPI" flag to True
+        On PC set "useRPI" flag to False
+        Run main.py to start
+
+Usage:  On Raspberry pi a physical button should be used to trigger gathering of images.
+        On PC a key button is used to trigger gathering of images.
+
+        Start camera page.
+        Apply mask.
+        Set HSV threshold values and morphological operations.
+        Apply Save Masked Images.
+
+        Start monitoring 3D print.
+
+        The application alert if error is detected.
 """
-import first_GUI
+from GUI import MainWindow
 from facade import Facade
 
-def main():
-    first_GUI.vp_start_gui()
 
-if __name__ == "__main__":
-    main()
+useRPi = False
+facade = Facade(useRPi=useRPi)
+GUIApplication = MainWindow(facade=facade)
+GUIApplication.start()
