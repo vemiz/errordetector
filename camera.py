@@ -13,7 +13,7 @@ class Camera:
         :param useRPi: Flag for using raspberry pi or pc
         """
         self.videosrc = 0
-        self.resolution = (640, 480)  # (3280, 2464) (1088, 720) (640, 480) (1280, 720)
+        self.resolution = (1280, 720)  # (3280, 2464) (1088, 720) (640, 480) (1280, 720)
         self.framerate = 30
         self.usepicamera = useRPi
         self.frame = None

@@ -46,7 +46,7 @@ class MainWindow(threading.Thread):
         """
         # Setup window
         self.root = Tk()
-        self.root.iconbitmap(self, default="clienticon.ico")
+        #self.root.iconbitmap(self, default="clienticon.ico")
         self.root.style = ttkthemes.ThemedStyle()
         self.root.style.theme_use('black')
         # self.root.geometry("800x400")

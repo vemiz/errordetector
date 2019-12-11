@@ -80,8 +80,7 @@ class Facade(threading.Thread):
         """
         image1 = self.getlastimage(index=-1)
         image2 = self.getlastimage(index=-2)
-        similarity = self._processor.chechsimilarity(image1, image2)
-        print("Diff = " + str(round(similarity, 5)))
+        self._processor.chechsimilarity(image1, image2)
 
     def setapplymask(self, flag):
         """
@@ -189,12 +188,15 @@ class Facade(threading.Thread):
                 self.onbuttonpress()
 
     #  https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
-    # TODO: Implement or remove.
+    # TODO: Remove??
     def comparelastimages(self):
         currentframe = self._imageregister.getframe()
         lastframe = self._imageregister.getlastframe()
         diff = self._processor.get_image_diff(currentframe, lastframe)
         print(diff)
+
+    def getregisterlength(self):
+        return self._imageregister.getlength()
 
     def getlastimage(self, index):
         """

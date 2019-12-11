@@ -1,5 +1,6 @@
 import cv2
 
+
 class Imageregister:
     def __init__(self):
         self._imglist = []
