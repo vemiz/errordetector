@@ -468,7 +468,7 @@ class Camerapage():
 
     def run(self):
         """
-        Pulling frames from facade for displaying.
+        Pulling frames from  facade for displaying.
         Reruns after 30ms to update window.
         """
         self.parent.updater()

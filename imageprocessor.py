@@ -33,23 +33,30 @@ class Processor(threading.Thread):
         self.open = False
         self.close = False
         self.thresh = 10000
-
+        self.heighterrorflag1 = False
+        self.heighterrorflag2 = False
+        self.widthlefterrorflag1 = False
+        self.widthlefterrorflag2 = False
+        self.widthrighterrorflag1 = False
+        self.widthrighterrorflag2 = False
+        self.alert = False
         self.daemon = True
         self.start()
 
     def setlogfilename(self, name):
         self.logfilename = str(name)
 
-    def logdatatofile(self, diff, height, width, status):
-        fieldnames = ["Time", "Diff", "Top position", "Horizontal position", "Status"]
+    def logdatatofile(self, diff, height, leftdiff, rightdiff, status):
+        fieldnames = ["Time", "Diff", "Height diff", "Left diff", "Right diff", "Status"]
         with open('logged_data.csv', "a", newline='') as my_file:
             writer = csv.DictWriter(my_file, fieldnames=fieldnames)
             if my_file.tell() == 0:
                 writer.writeheader()
             writer.writerow({"Time": datetime.datetime.now().time().replace(microsecond=0).isoformat(),
                              "Diff": diff,
-                             "Top position": height,
-                             "Horizontal position": width,
+                             "Height diff": height,
+                             "Left diff": leftdiff,
+                             "Right diff": rightdiff,
                              "Status": status})
 
     def get_clean_video_stream(self):
@@ -116,7 +123,6 @@ class Processor(threading.Thread):
                                                cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         cv2.imshow("Keypoints", img_with_keypoints)
 
-    # https://stackoverflow.com/questions/11541154/checking-images-for-similarity-with-opencv
     def get_image_diff(self, img1, img2):
         diffimg = np.subtract(img1, img2)
         status = ""
@@ -129,61 +135,112 @@ class Processor(threading.Thread):
         topdist = self.getdistancebetweenpoints(img1extpts[2], img2extpts[2])
         botdist = self.getdistancebetweenpoints(img1extpts[3], img2extpts[3])
 
-        # print("Shifted left by: " + str(leftdiff))
-        # print("Shifted right by: " + str(rightdiff))
-        # print("Shifted up by: " + str(topdiff))
-        # print("Shifted down by: " + str(botdiff))
-        # print("Image 1 top x: " + str(img1extpts[2][1]))
-        # print("Image 2 top x: " + str(img2extpts[2][1]))
-        
-        heightdiff = img2extpts[2][1] - img1extpts[2][1]
-        print("Height diff: " + str(heightdiff))
+        heightdiff = self.heightdiff()
+        if heightdiff is None:
+            heightdiff = -2
+
         if heightdiff < 1:
-            print("Part did not grow")
-            status = status + "Part did not grow. "
-            errorflag = True
+            if heightdiff == -2:
+                heightdiff = 0
+                print("[INFO] Waiting for fourth frame")
+            else:
+                print("[Warning] Part did not grow")
+                status = status + "Part did not grow. "
+                errorflag = True
+                if self.heighterrorflag1:
+                    self.heighterrorflag2 = True
+                else:
+                    self.heighterrorflag1 = True
+        else:
+            if self.heighterrorflag1:
+                self.heighterrorflag1 = False
 
         leftdiff = img2extpts[0][0] - img1extpts[0][0]
         if -3 > leftdiff or leftdiff > 3:
-            print("Part moved vertically. Detected on left side")
+            print("[Warning] Part moved vertically. Detected on left side")
             status = status + "Vertical shift, Left side. "
             errorflag = True
+            if self.widthlefterrorflag1:
+                self.widthlefterrorflag2 = True
+            else:
+                self.widthlefterrorflag1 = True
+        else:
+            if self.widthlefterrorflag1:
+                self.widthlefterrorflag1 = False
 
         rightdiff = img2extpts[1][0] - img1extpts[1][0]
         if -3 > rightdiff or rightdiff > 3:
-            print("Part moved vertically. Detected on right side")
+            print("[Warning] Part moved vertically. Detected on right side")
             status = status + "Vertical shift, Right side. "
             errorflag = True
-
-        verticallineindex = img2extpts[2][1] + 2
-        edgeindex = self.getedgeonline(verticallineindex, img1)
-        self.compareedge(edgeindex)
-        #height = 720 - img1extpts[2][1]
+            if self.widthrighterrorflag1:
+                self.widthrighterrorflag2 = True
+            else:
+                self.widthrighterrorflag1 = True
+        else:
+            if self.widthrighterrorflag1:
+                self.widthrighterrorflag1 = False
 
         self.displaycontours()
         diff = np.count_nonzero(diffimg)
-        if not errorflag:
+        if not errorflag and not self.alert:
             status = "Normal"
-        height = self.heightdiff()
-        self.logdatatofile(diff=diff, height=height, width=img1extpts[0][0], status=status)
+        if self.heighterrorflag1 and self.heighterrorflag2:
+            status = "ERROR Detected!!"
+            self.alert = True
+        if self.widthlefterrorflag1 and self.widthlefterrorflag2:
+            status = "ERROR Detected!!"
+            self.alert = True
+        if self.widthrighterrorflag1 and self.widthrighterrorflag2:
+            status = "ERROR Detected!!"
+            self.alert = True
+        if self.alert:
+            print("[Alert!!!] ERROR detected. Check printer")
+            status = "Alert!!! ERROR detected. Check printer"
+
+        self.logdatatofile(diff=diff, height=heightdiff, leftdiff=leftdiff, rightdiff=rightdiff, status=status)
         return diff
+
+    def widthposnprevious(self):
+        if self.facade.getregisterlength() > 3:
+            currentframe = self.facade.getlastimage(-1)
+            npreviousframe = self.facade.getlastimage(-2)
+            if np.count_nonzero(currentframe) < 4:
+                print("[INFO] Current frame empty")
+            if np.count_nonzero(npreviousframe) < 4:
+                print("[INFO] Nth frame empty")
+            else:
+                diffimg = np.subtract(currentframe, npreviousframe)
+                diffimagepoints = self.getextremepoints(diffimg)
+                diffimgwidth = diffimagepoints[0][0]
+                print("[INFO] Width pos at diffimg: " + str(diffimgwidth))
+                return diffimgwidth
+        else:
+            return -2
 
     def heightdiff(self):
         if self.facade.getregisterlength() > 3:
             currentframe = self.facade.getlastimage(-1)
             npreviousframe = self.facade.getlastimage(-4)
             if np.count_nonzero(currentframe) < 4:
-                print("Current frame empty")
+                print("[INFO] Current frame empty")
             if np.count_nonzero(npreviousframe) < 4:
-                print("Nth frame empty")
+                print("[INFO] Nth frame empty")
             else:
+                print("[DEBUG] Nonzero current frame: " + str(np.count_nonzero(currentframe)))
+                print("[DEBUG] Nonzero fourth last frame: " + str(np.count_nonzero(npreviousframe)))
                 currentframepoints = self.getextremepoints(currentframe)
                 npreviousframepoints = self.getextremepoints(npreviousframe)
                 heightdiff = npreviousframepoints[2][1] - currentframepoints[2][1]
-                print("Height diff between curren and fourth last frame: " + str(heightdiff))
-                return heightdiff
+                print("[DEBUG] Height current frame: " + str(currentframepoints[2][1]))
+                print("[DEBUG] Height fourth last frame: " + str(npreviousframepoints[2][1]))
+                print("[INFO] Height diff between current and fourth last frame: " + str(heightdiff))
+                if heightdiff is None:
+                    return -2
+                else:
+                    return heightdiff
         else:
-            return 0
+            return -2
 
     def compareedge(self, edgeindex):
         if self.previousedgeindex is None:
@@ -194,7 +251,7 @@ class Processor(threading.Thread):
                 self.previousedgeindex = edgeindex
                 print("Diff index: " + str(diffindex))
             except ValueError:
-                print("ValueError when comparing edges...")
+                print("[Warning] ValueError when comparing edges...")
 
     def getdistancebetweenpoints(self, pkt1, pkt2):
         dist = math.sqrt((pkt1[0] - pkt2[0]) ** 2 + (pkt1[1] - pkt2[1]) ** 2)
@@ -204,14 +261,14 @@ class Processor(threading.Thread):
         image1 = np.array(img1)
         image2 = np.array(img2)
         if np.count_nonzero(image1) < 4:
-            print("Current frame empty")
+            print("[INFO] Current frame empty")
         elif np.count_nonzero(image2) < 4:
-            print("Last frame empty")
+            print("[INFO] Last frame empty")
         else:
             self.similarity = self.get_image_diff(image1, image2)
             if self.similarity > self.thresh:
-                print("Motion is bigger than threshold. Check printer")
-            #print("Nonzeros in diffimg: " + str(self.similarity))
+                print("[Warning] Motion is bigger than threshold. Check printer")
+            # print("Nonzeros in diffimg: " + str(self.similarity))
 
     # TODO: Prøv å bruke det forrige som template...
 
@@ -247,27 +304,27 @@ class Processor(threading.Thread):
                 extRight = tuple(c[c[:, :, 0].argmax()][0])
                 extTop = tuple(c[c[:, :, 1].argmin()][0])
                 extBot = tuple(c[c[:, :, 1].argmax()][0])
-                #cv2.drawContours(frame, [c], -1, (0, 255, 0), 3)
-                #cv2.circle(frame, extLeft, 8, (0, 0, 255), -1)
-                #cv2.circle(frame, extRight, 8, (0, 255, 0), -1)
-                #cv2.circle(frame, extTop, 8, (255, 0, 0), -1)
-                #cv2.circle(frame, extBot, 8, (255, 255, 0), -1)
+                # cv2.drawContours(frame, [c], -1, (0, 255, 0), 3)
+                # cv2.circle(frame, extLeft, 8, (0, 0, 255), -1)
+                # cv2.circle(frame, extRight, 8, (0, 255, 0), -1)
+                # cv2.circle(frame, extTop, 8, (255, 0, 0), -1)
+                # cv2.circle(frame, extBot, 8, (255, 255, 0), -1)
                 extremepointpos = [extLeft, extRight, extTop, extBot]
                 # print(extremepointpos)
-        #cv2.imshow("Frame", frame)
+        # cv2.imshow("Frame", frame)
 
     def getedgeonline(self, lineindex, frame):
         edgeindex = []
         risingkernel = [1, -1]
         risingedge = np.convolve(frame[lineindex], risingkernel)
-        #print(risingedge)
+        # print(risingedge)
         for index, v in enumerate(risingedge):
             if v == 255 or v == -255:
-                #print("Edgeindex: " + str(index))
+                # print("Edgeindex: " + str(index))
                 edgeindex.append(index)
-        #frame[lineindex] = 255
-        #cv2.imshow("Section", frame)
-        #print(edgeindex)
+        # frame[lineindex] = 255
+        # cv2.imshow("Section", frame)
+        # print(edgeindex)
         return edgeindex
 
     def getextremepoints(self, img):

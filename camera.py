@@ -13,8 +13,8 @@ class Camera:
         :param useRPi: Flag for using raspberry pi or pc
         """
         self.videosrc = 0
-        self.resolution = (1280, 720)  # (3280, 2464) (1088, 720) (640, 480) (1280, 720)
-        self.framerate = 30
+        self.resolution = (1280, 960)  # (1920, 1440) (3280, 2464) (1088, 720) (640, 480) (1280, 720)
+        self.framerate = 15
         self.usepicamera = useRPi
         self.frame = None
         self.stopped = False
@@ -42,7 +42,7 @@ class Camera:
             self.cam.set(4, self.resolution[1])
             self.cam.set(cv2.CAP_PROP_FPS, self.framerate)
 
-        # Start deamon thread when camera initialises
+        # Start deamon thread when camera  initialises
         self.th = Thread(target=self.update, daemon=True, args=())
         self.th.start()
 
