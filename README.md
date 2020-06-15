@@ -20,7 +20,8 @@ in the object is tracked and compared with key points in previous images to dete
 error is present. Results from testing the system shows detection of common errors and
 handling of false detection.
 The result of this paper is a system that uses computer vision to detect errors in 3D printing.
-<img src="images/gui.JPG" width="150">
+
+<img src="images/gui.JPG" width="300">
 
 ## NB!
 This is a working progress.
