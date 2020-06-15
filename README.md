@@ -21,7 +21,7 @@ error is present. Results from testing the system shows detection of common erro
 handling of false detection.
 The result of this paper is a system that uses computer vision to detect errors in 3D printing.
 
-<img src="images/gui.JPG" width="300">
+<img src="images/gui.JPG" height="300"> <img src="images/demo2.JPG" height="300">
 
 ## NB!
 This is a working progress.
